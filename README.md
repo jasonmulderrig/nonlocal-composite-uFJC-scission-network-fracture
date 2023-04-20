@@ -1,1 +1,0 @@
-# nonlocal-composite-uFJC-scission-network-fracture
