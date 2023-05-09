@@ -4,7 +4,7 @@ nonlocal composite uFJC scission network fracture
 
 |build| |license|
 
-The Python package for the composite uFJC model in the context of non-local chain scission taking place in a polymer network undergoing fracture.
+The Python package for the composite uFJC model in the context of non-local chain scission taking place in a polymer network undergoing fracture. This repository is dependent upon the `composite-uFJC-scission-UFL-FEniCS <https://pypi.org/project/composite-ufjc-scission-ufl-fenics/>`_ Python package.
 
 ************
 Installation
