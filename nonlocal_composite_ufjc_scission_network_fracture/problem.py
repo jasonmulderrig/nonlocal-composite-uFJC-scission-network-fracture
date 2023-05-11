@@ -353,71 +353,73 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
         self.V_CG_scalar = FunctionSpace(self.mesh, "CG", femp["scalar_prmtr_degree"])
         self.V_DG_scalar = FunctionSpace(self.mesh, "DG", femp["scalar_prmtr_degree"])
         self.V_DG_tensor = TensorFunctionSpace(self.mesh, "DG", 0)
-
+        
+        self.g_val = Function(self.V_DG_scalar)
+        
         if ppp["save_lmbda_c_mesh"] or ppp["save_lmbda_c_chunks"]:
-            self.V_lmbda_c = Function(self.V_DG_scalar)
+            self.lmbda_c_val = Function(self.V_DG_scalar)
         
         if ppp["save_lmbda_c_eq_mesh"] or ppp["save_lmbda_c_eq_chunks"]:
-            self.V_lmbda_c_eq = Function(self.V_DG_scalar)
+            self.lmbda_c_eq_val = Function(self.V_DG_scalar)
         
         if ppp["save_lmbda_nu_mesh"] or ppp["save_lmbda_nu_chunks"]:
-            self.V_lmbda_nu = Function(self.V_DG_scalar)
+            self.lmbda_nu_val = Function(self.V_DG_scalar)
         
         if ppp["save_lmbda_c_eq_tilde_mesh"] or ppp["save_lmbda_c_eq_tilde_chunks"]:
-            self.V_lmbda_c_eq_tilde = Function(self.V_DG_scalar)
+            self.lmbda_c_eq_tilde_val = Function(self.V_DG_scalar)
         
         if ppp["save_lmbda_nu_tilde_mesh"] or ppp["save_lmbda_nu_tilde_chunks"]:
-            self.V_lmbda_nu_tilde = Function(self.V_DG_scalar)
+            self.lmbda_nu_tilde_val = Function(self.V_DG_scalar)
         
         if ppp["save_lmbda_c_eq_tilde_max_mesh"] or ppp["save_lmbda_c_eq_tilde_max_chunks"]:
-            self.V_lmbda_c_eq_tilde_max = Function(self.V_DG_scalar)
+            self.lmbda_c_eq_tilde_max_val = Function(self.V_DG_scalar)
         
         if ppp["save_lmbda_nu_tilde_max_mesh"] or ppp["save_lmbda_nu_tilde_max_chunks"]:
-            self.V_lmbda_nu_tilde_max = Function(self.V_DG_scalar)
+            self.lmbda_nu_tilde_max_val = Function(self.V_DG_scalar)
         
         if ppp["save_upsilon_c_mesh"] or ppp["save_upsilon_c_chunks"]:
-            self.V_upsilon_c = Function(self.V_DG_scalar)
+            self.upsilon_c_val = Function(self.V_DG_scalar)
         
         if ppp["save_Upsilon_c_mesh"] or ppp["save_Upsilon_c_chunks"]:
-            self.V_Upsilon_c = Function(self.V_DG_scalar)
+            self.Upsilon_c_val = Function(self.V_DG_scalar)
         
         if ppp["save_d_c_mesh"] or ppp["save_d_c_chunks"]:
-            self.V_d_c = Function(self.V_DG_scalar)
+            self.d_c_val = Function(self.V_DG_scalar)
         
         if ppp["save_D_c_mesh"] or ppp["save_D_c_chunks"]:
-            self.V_D_c = Function(self.V_DG_scalar)
+            self.D_c_val = Function(self.V_DG_scalar)
         
         if ppp["save_epsilon_cnu_diss_hat_mesh"] or ppp["save_epsilon_cnu_diss_hat_chunks"]:
-            self.V_epsilon_cnu_diss_hat = Function(self.V_DG_scalar)
+            self.epsilon_cnu_diss_hat_val = Function(self.V_DG_scalar)
         
         if ppp["save_Epsilon_cnu_diss_hat_mesh"] or ppp["save_Epsilon_cnu_diss_hat_chunks"]:
-            self.V_Epsilon_cnu_diss_hat = Function(self.V_DG_scalar)
+            self.Epsilon_cnu_diss_hat_val = Function(self.V_DG_scalar)
         
         if ppp["save_epsilon_c_diss_hat_mesh"] or ppp["save_epsilon_c_diss_hat_chunks"]:
-            self.V_epsilon_c_diss_hat = Function(self.V_DG_scalar)
+            self.epsilon_c_diss_hat_val = Function(self.V_DG_scalar)
         
         if ppp["save_Epsilon_c_diss_hat_mesh"] or ppp["save_Epsilon_c_diss_hat_chunks"]:
-            self.V_Epsilon_c_diss_hat = Function(self.V_DG_scalar)
+            self.Epsilon_c_diss_hat_val = Function(self.V_DG_scalar)
         
         if ppp["save_overline_epsilon_cnu_diss_hat_mesh"] or ppp["save_overline_epsilon_cnu_diss_hat_chunks"]:
-            self.V_overline_epsilon_cnu_diss_hat = Function(self.V_DG_scalar)
+            self.overline_epsilon_cnu_diss_hat_val = Function(self.V_DG_scalar)
         
         if ppp["save_overline_Epsilon_cnu_diss_hat_mesh"] or ppp["save_overline_Epsilon_cnu_diss_hat_chunks"]:
-            self.V_overline_Epsilon_cnu_diss_hat = Function(self.V_DG_scalar)
+            self.overline_Epsilon_cnu_diss_hat_val = Function(self.V_DG_scalar)
         
         if ppp["save_overline_epsilon_c_diss_hat_mesh"] or ppp["save_overline_epsilon_c_diss_hat_chunks"]:
-            self.V_overline_epsilon_c_diss_hat = Function(self.V_DG_scalar)
+            self.overline_epsilon_c_diss_hat_val = Function(self.V_DG_scalar)
         
         if ppp["save_overline_Epsilon_c_diss_hat_mesh"] or ppp["save_overline_Epsilon_c_diss_hat_chunks"]:
-            self.V_overline_Epsilon_c_diss_hat = Function(self.V_DG_scalar)
+            self.overline_Epsilon_c_diss_hat_val = Function(self.V_DG_scalar)
         
         if ppp["save_F_mesh"] or ppp["save_F_chunks"]:
-            self.V_F = Function(self.V_DG_tensor)
+            self.F_val = Function(self.V_DG_tensor)
         
         if ppp["save_sigma_mesh"] or ppp["save_sigma_chunks"]:
-            self.V_sigma = Function(self.V_DG_tensor)
-            self.V_sigma_penalty_term = Function(self.V_DG_tensor)
-            self.V_sigma_less_penalty_term = Function(self.V_DG_tensor)
+            self.sigma_val = Function(self.V_DG_tensor)
+            self.sigma_penalty_term_val = Function(self.V_DG_tensor)
+            self.sigma_less_penalty_term_val = Function(self.V_DG_tensor)
 
         # Kinematics
         # deformation gradient tensor
@@ -440,8 +442,11 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
 
         # Define gradient activity and normalized anisotropic
         # interaction tensor
-        self.g = Constant(1.)
+        # self.g = interpolate(Expression("1.", degree=femp["scalar_prmtr_degree"]), self.V_CG_scalar)
+        # self.H_tilde = self.I # Function(self.V_DG_tensor) # self.I
+        # local_project(self.I, self.V_DG_tensor, self.H_tilde)
         self.H_tilde = self.I
+        self.g = self.g_ufl_fenics_mesh_func()
 
         # Calculate the weak form for displacement
         self.WF_u = (
@@ -456,7 +461,7 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
         # Calculate the weak form for non-local chain stretch
         self.WF_lmbda_c_tilde = (
             self.v_lmbda_c_tilde*self.lmbda_c_tilde*dx(metadata=self.metadata)
-            + mp["l_nl"]**2*self.g*dot(grad(self.v_lmbda_c_tilde), self.H_tilde*grad(self.lmbda_c_tilde))*dx(metadata=self.metadata)
+            + mp["l_nl"]**2*self.g()*dot(grad(self.v_lmbda_c_tilde), self.H_tilde*grad(self.lmbda_c_tilde))*dx(metadata=self.metadata)
             - self.v_lmbda_c_tilde*self.lmbda_c*dx(metadata=self.metadata)
         )
 
@@ -476,6 +481,8 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
         self.V_u = VectorFunctionSpace(self.mesh, "CG", femp["u_degree"])
         # Create function space for non-local chain stretch
         self.V_lmbda_c_tilde = FunctionSpace(self.mesh, "CG", femp["scalar_prmtr_degree"])
+        # Create function space for gradient activity
+        self.V_g = FunctionSpace(self.mesh, "CG", femp["scalar_prmtr_degree"])
 
         # Create UFL element from the displacement function space
         self.V_u_ufl_elem = self.V_u.ufl_element()
@@ -491,10 +498,6 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
         self.dmixed_space = TrialFunction(self.V)
         self.v_mixed_space = TestFunction(self.V)
 
-        # Split the mixed function space and the mixed test function space for displacement and non-local chain stretch
-        (self.u, self.lmbda_c_tilde) = split(self.mixed_space)
-        (self.v_u, self.v_lmbda_c_tilde) = split(self.v_mixed_space)
-
         # Initialization
         class InitialConditions(UserExpression):
             def eval(self, vals, x):
@@ -508,7 +511,13 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
         ics = InitialConditions(degree=mixed_space_degree)
         self.mixed_space.interpolate(ics)
 
+        # Split the mixed function space and the mixed test function space for displacement and non-local chain stretch
+        (self.u, self.lmbda_c_tilde) = split(self.mixed_space)
+        (self.v_u, self.v_lmbda_c_tilde) = split(self.v_mixed_space)
+
         self.lmbda_c_tilde_max = interpolate(Expression("0.", degree=femp["scalar_prmtr_degree"]), self.V_lmbda_c_tilde)
+        self.g = interpolate(Expression("1.", degree=femp["scalar_prmtr_degree"]), self.V_g)
+        # self.g = Constant(1.0)
 
         # Define objects needed for calculations
         self.I           = Identity(len(self.u))
@@ -516,70 +525,72 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
         self.V_DG_scalar = FunctionSpace(self.mesh, "DG", femp["scalar_prmtr_degree"])
         self.V_DG_tensor = TensorFunctionSpace(self.mesh, "DG", 0)
         
+        self.g_val = Function(self.V_DG_scalar)
+        
         if ppp["save_lmbda_c_mesh"] or ppp["save_lmbda_c_chunks"]:
-            self.V_lmbda_c = Function(self.V_DG_scalar)
+            self.lmbda_c_val = Function(self.V_DG_scalar)
         
         if ppp["save_lmbda_c_eq_mesh"] or ppp["save_lmbda_c_eq_chunks"]:
-            self.V_lmbda_c_eq = Function(self.V_DG_scalar)
+            self.lmbda_c_eq_val = Function(self.V_DG_scalar)
         
         if ppp["save_lmbda_nu_mesh"] or ppp["save_lmbda_nu_chunks"]:
-            self.V_lmbda_nu = Function(self.V_DG_scalar)
+            self.lmbda_nu_val = Function(self.V_DG_scalar)
         
         if ppp["save_lmbda_c_eq_tilde_mesh"] or ppp["save_lmbda_c_eq_tilde_chunks"]:
-            self.V_lmbda_c_eq_tilde = Function(self.V_DG_scalar)
+            self.lmbda_c_eq_tilde_val = Function(self.V_DG_scalar)
         
         if ppp["save_lmbda_nu_tilde_mesh"] or ppp["save_lmbda_nu_tilde_chunks"]:
-            self.V_lmbda_nu_tilde = Function(self.V_DG_scalar)
+            self.lmbda_nu_tilde_val = Function(self.V_DG_scalar)
         
         if ppp["save_lmbda_c_eq_tilde_max_mesh"] or ppp["save_lmbda_c_eq_tilde_max_chunks"]:
-            self.V_lmbda_c_eq_tilde_max = Function(self.V_DG_scalar)
+            self.lmbda_c_eq_tilde_max_val = Function(self.V_DG_scalar)
         
         if ppp["save_lmbda_nu_tilde_max_mesh"] or ppp["save_lmbda_nu_tilde_max_chunks"]:
-            self.V_lmbda_nu_tilde_max = Function(self.V_DG_scalar)
+            self.lmbda_nu_tilde_max_val = Function(self.V_DG_scalar)
         
         if ppp["save_upsilon_c_mesh"] or ppp["save_upsilon_c_chunks"]:
-            self.V_upsilon_c = Function(self.V_DG_scalar)
+            self.upsilon_c_val = Function(self.V_DG_scalar)
         
         if ppp["save_Upsilon_c_mesh"] or ppp["save_Upsilon_c_chunks"]:
-            self.V_Upsilon_c = Function(self.V_DG_scalar)
+            self.Upsilon_c_val = Function(self.V_DG_scalar)
         
         if ppp["save_d_c_mesh"] or ppp["save_d_c_chunks"]:
-            self.V_d_c = Function(self.V_DG_scalar)
+            self.d_c_val = Function(self.V_DG_scalar)
         
         if ppp["save_D_c_mesh"] or ppp["save_D_c_chunks"]:
-            self.V_D_c = Function(self.V_DG_scalar)
+            self.D_c_val = Function(self.V_DG_scalar)
         
         if ppp["save_epsilon_cnu_diss_hat_mesh"] or ppp["save_epsilon_cnu_diss_hat_chunks"]:
-            self.V_epsilon_cnu_diss_hat = Function(self.V_DG_scalar)
+            self.epsilon_cnu_diss_hat_val = Function(self.V_DG_scalar)
         
         if ppp["save_Epsilon_cnu_diss_hat_mesh"] or ppp["save_Epsilon_cnu_diss_hat_chunks"]:
-            self.V_Epsilon_cnu_diss_hat = Function(self.V_DG_scalar)
+            self.Epsilon_cnu_diss_hat_val = Function(self.V_DG_scalar)
         
         if ppp["save_epsilon_c_diss_hat_mesh"] or ppp["save_epsilon_c_diss_hat_chunks"]:
-            self.V_epsilon_c_diss_hat = Function(self.V_DG_scalar)
+            self.epsilon_c_diss_hat_val = Function(self.V_DG_scalar)
         
         if ppp["save_Epsilon_c_diss_hat_mesh"] or ppp["save_Epsilon_c_diss_hat_chunks"]:
-            self.V_Epsilon_c_diss_hat = Function(self.V_DG_scalar)
+            self.Epsilon_c_diss_hat_val = Function(self.V_DG_scalar)
         
         if ppp["save_overline_epsilon_cnu_diss_hat_mesh"] or ppp["save_overline_epsilon_cnu_diss_hat_chunks"]:
-            self.V_overline_epsilon_cnu_diss_hat = Function(self.V_DG_scalar)
+            self.overline_epsilon_cnu_diss_hat_val = Function(self.V_DG_scalar)
         
         if ppp["save_overline_Epsilon_cnu_diss_hat_mesh"] or ppp["save_overline_Epsilon_cnu_diss_hat_chunks"]:
-            self.V_overline_Epsilon_cnu_diss_hat = Function(self.V_DG_scalar)
+            self.overline_Epsilon_cnu_diss_hat_val = Function(self.V_DG_scalar)
         
         if ppp["save_overline_epsilon_c_diss_hat_mesh"] or ppp["save_overline_epsilon_c_diss_hat_chunks"]:
-            self.V_overline_epsilon_c_diss_hat = Function(self.V_DG_scalar)
+            self.overline_epsilon_c_diss_hat_val = Function(self.V_DG_scalar)
         
         if ppp["save_overline_Epsilon_c_diss_hat_mesh"] or ppp["save_overline_Epsilon_c_diss_hat_chunks"]:
-            self.V_overline_Epsilon_c_diss_hat = Function(self.V_DG_scalar)
+            self.overline_Epsilon_c_diss_hat_val = Function(self.V_DG_scalar)
         
         if ppp["save_F_mesh"] or ppp["save_F_chunks"]:
-            self.V_F = Function(self.V_DG_tensor)
+            self.F_val = Function(self.V_DG_tensor)
         
         if ppp["save_sigma_mesh"] or ppp["save_sigma_chunks"]:
-            self.V_sigma = Function(self.V_DG_tensor)
-            self.V_sigma_penalty_term = Function(self.V_DG_tensor)
-            self.V_sigma_less_penalty_term = Function(self.V_DG_tensor)
+            self.sigma_val = Function(self.V_DG_tensor)
+            self.sigma_penalty_term_val = Function(self.V_DG_tensor)
+            self.sigma_less_penalty_term_val = Function(self.V_DG_tensor)
 
         # Kinematics
         # deformation gradient tensor
@@ -602,7 +613,9 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
 
         # Define gradient activity and normalized anisotropic
         # interaction tensor
-        self.g = Constant(1.)
+        # self.g = self.g_ufl_fenics_mesh_func()
+        # self.H_tilde = self.I # Function(self.V_DG_tensor) # self.I
+        # local_project(self.I, self.V_DG_tensor, self.H_tilde)
         self.H_tilde = self.I
 
         # Calculate the weak form for displacement
@@ -1080,13 +1093,18 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
         # update maximal non-local chain stretch to account for network
         # irreversibility
         self.lmbda_c_tilde_max = project(conditional(gt(self.lmbda_c_tilde, self.lmbda_c_tilde_max), self.lmbda_c_tilde, self.lmbda_c_tilde_max), self.V_lmbda_c_tilde)
+        # print0(peval(self.lmbda_c_tilde_max, self.meshpoints_list[0]))
         # update the gradient activity to account for the decreasing
         # non-local interaction for increasing non-local damage
+        # self.g = project(self.g_ufl_fenics_mesh_func(), self.V_CG_scalar)
         self.g = self.g_ufl_fenics_mesh_func()
+        # local_project(self.g, self.V_DG_scalar, self.g_val)
+        # print0(peval(self.g_val, self.meshpoints_list[0]))
         # update the normalized anisotropic interaction tensor to
         # account for the shape, size, and orientation of non-local
         # interactions at the microscale of the deformed polymer network
-        self.H_tilde = self.H_tilde_ufl_fenics_mesh_func()
+        # self.H_tilde = project(self.H_tilde_ufl_fenics_mesh_func(), self.V_DG_tensor)
+        # local_project(self.H_tilde_ufl_fenics_mesh_func(), self.V_DG_tensor, self.H_tilde)
     
     def solve_bounded_alternate_minimization(self):
         """
@@ -1185,59 +1203,61 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
         ppp  = self.parameters["post_processing"]
 
         if ppp["save_lmbda_c_mesh"]:
-            local_project(self.lmbda_c, self.V_DG_scalar, self.V_lmbda_c)
-            self.V_lmbda_c.rename("Chain stretch", "")
-            self.file_results.write(self.V_lmbda_c, self.t_val)
+            local_project(self.lmbda_c, self.V_DG_scalar, self.lmbda_c_val)
+            self.lmbda_c_val.rename("Chain stretch", "lmbda_c")
+            self.file_results.write(self.lmbda_c_val, self.t_val)
         
         if ppp["save_lmbda_c_chunks"]:
-            local_project(self.lmbda_c, self.V_DG_scalar, self.V_lmbda_c)
+            local_project(self.lmbda_c, self.V_DG_scalar, self.lmbda_c_val)
             for meshpoint_indx in range(self.meshpoint_num):
                 MPI.barrier(MPI.comm_world)
-                self.lmbda_c_chunks_val[meshpoint_indx] = peval(self.V_lmbda_c, self.meshpoints_list[meshpoint_indx])
+                self.lmbda_c_chunks_val[meshpoint_indx] = peval(self.lmbda_c_val, self.meshpoints_list[meshpoint_indx])
             self.lmbda_c_chunks.append(deepcopy(self.lmbda_c_chunks_val))
         
         if ppp["save_lmbda_c_eq_mesh"]:
             for nu_chunk_indx in range(self.nu_chunks_num):
                 nu_indx = self.nu_chunks_indx_in_nu_list[nu_chunk_indx]
-                lmbda_c_eq___nu_val = self.lmbda_c_eq_ufl_fenics_mesh_func(nu_indx)
-                local_project(lmbda_c_eq___nu_val, self.V_DG_scalar, self.V_lmbda_c_eq)
+                lmbda_c_eq___nu_chunk_val = self.lmbda_c_eq_ufl_fenics_mesh_func(nu_indx)
+                local_project(lmbda_c_eq___nu_chunk_val, self.V_DG_scalar, self.lmbda_c_eq_val)
 
                 nu_str = str(self.nu_list[nu_indx])
                 name_str = "Equilibrium chain stretch nu = " + nu_str
+                prmtr_str = "lmbda_c_eq nu = " + nu_str
 
-                self.V_lmbda_c_eq.rename(name_str, "")
-                self.file_results.write(self.V_lmbda_c_eq, self.t_val)
+                self.lmbda_c_eq_val.rename(name_str, prmtr_str)
+                self.file_results.write(self.lmbda_c_eq_val, self.t_val)
         
         if ppp["save_lmbda_c_eq_chunks"]:
             for meshpoint_indx in range(self.meshpoint_num):
                 for nu_chunk_indx in range(self.nu_chunks_num):
                     nu_indx = self.nu_chunks_indx_in_nu_list[nu_chunk_indx]
-                    lmbda_c_eq___nu_val = self.lmbda_c_eq_ufl_fenics_mesh_func(nu_indx)
-                    local_project(lmbda_c_eq___nu_val, self.V_DG_scalar, self.V_lmbda_c_eq)
+                    lmbda_c_eq___nu_chunk_val = self.lmbda_c_eq_ufl_fenics_mesh_func(nu_indx)
+                    local_project(lmbda_c_eq___nu_chunk_val, self.V_DG_scalar, self.lmbda_c_eq_val)
                     MPI.barrier(MPI.comm_world)
-                    self.lmbda_c_eq_chunks_val[meshpoint_indx][nu_chunk_indx] = peval(self.V_lmbda_c_eq, self.meshpoints_list[meshpoint_indx])
+                    self.lmbda_c_eq_chunks_val[meshpoint_indx][nu_chunk_indx] = peval(self.lmbda_c_eq_val, self.meshpoints_list[meshpoint_indx])
             self.lmbda_c_eq_chunks.append(deepcopy(self.lmbda_c_eq_chunks_val))
         
         if ppp["save_lmbda_nu_mesh"]:
             for nu_chunk_indx in range(self.nu_chunks_num):
                 nu_indx = self.nu_chunks_indx_in_nu_list[nu_chunk_indx]
-                lmbda_nu___nu_val = self.lmbda_nu_ufl_fenics_mesh_func(nu_indx)
-                local_project(lmbda_nu___nu_val, self.V_DG_scalar, self.V_lmbda_nu)
+                lmbda_nu___nu_chunk_val = self.lmbda_nu_ufl_fenics_mesh_func(nu_indx)
+                local_project(lmbda_nu___nu_chunk_val, self.V_DG_scalar, self.lmbda_nu_val)
 
                 nu_str = str(self.nu_list[nu_indx])
                 name_str = "Segment stretch nu = " + nu_str
+                prmtr_str = "lmbda_nu nu = " + nu_str
 
-                self.V_lmbda_nu.rename(name_str, "")
-                self.file_results.write(self.V_lmbda_nu, self.t_val)
+                self.lmbda_nu_val.rename(name_str, prmtr_str)
+                self.file_results.write(self.lmbda_nu_val, self.t_val)
         
         if ppp["save_lmbda_nu_chunks"]:
             for meshpoint_indx in range(self.meshpoint_num):
                 for nu_chunk_indx in range(self.nu_chunks_num):
                     nu_indx = self.nu_chunks_indx_in_nu_list[nu_chunk_indx]
-                    lmbda_nu___nu_val = self.lmbda_nu_ufl_fenics_mesh_func(nu_indx)
-                    local_project(lmbda_nu___nu_val, self.V_DG_scalar, self.V_lmbda_nu)
+                    lmbda_nu___nu_chunk_val = self.lmbda_nu_ufl_fenics_mesh_func(nu_indx)
+                    local_project(lmbda_nu___nu_chunk_val, self.V_DG_scalar, self.lmbda_nu_val)
                     MPI.barrier(MPI.comm_world)
-                    self.lmbda_nu_chunks_val[meshpoint_indx][nu_chunk_indx] = peval(self.V_lmbda_nu, self.meshpoints_list[meshpoint_indx])
+                    self.lmbda_nu_chunks_val[meshpoint_indx][nu_chunk_indx] = peval(self.lmbda_nu_val, self.meshpoints_list[meshpoint_indx])
             self.lmbda_nu_chunks.append(deepcopy(self.lmbda_nu_chunks_val))
         
         if ppp["save_lmbda_c_tilde_mesh"]:
@@ -1253,45 +1273,47 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
         if ppp["save_lmbda_c_eq_tilde_mesh"]:
             for nu_chunk_indx in range(self.nu_chunks_num):
                 nu_indx = self.nu_chunks_indx_in_nu_list[nu_chunk_indx]
-                lmbda_c_eq_tilde___nu_val = self.lmbda_c_eq_tilde_ufl_fenics_mesh_func(nu_indx)
-                local_project(lmbda_c_eq_tilde___nu_val, self.V_DG_scalar, self.V_lmbda_c_eq_tilde)
+                lmbda_c_eq_tilde___nu_chunk_val = self.lmbda_c_eq_tilde_ufl_fenics_mesh_func(nu_indx)
+                local_project(lmbda_c_eq_tilde___nu_chunk_val, self.V_DG_scalar, self.lmbda_c_eq_tilde_val)
 
                 nu_str = str(self.nu_list[nu_indx])
                 name_str = "Non-local equilibrium chain stretch nu = " + nu_str
+                prmtr_str = "lmbda_c_eq_tilde nu = " + nu_str
 
-                self.V_lmbda_c_eq_tilde.rename(name_str, "")
-                self.file_results.write(self.V_lmbda_c_eq_tilde, self.t_val)
+                self.lmbda_c_eq_tilde_val.rename(name_str, prmtr_str)
+                self.file_results.write(self.lmbda_c_eq_tilde_val, self.t_val)
         
         if ppp["save_lmbda_c_eq_tilde_chunks"]:
             for meshpoint_indx in range(self.meshpoint_num):
                 for nu_chunk_indx in range(self.nu_chunks_num):
                     nu_indx = self.nu_chunks_indx_in_nu_list[nu_chunk_indx]
-                    lmbda_c_eq_tilde___nu_val = self.lmbda_c_eq_tilde_ufl_fenics_mesh_func(nu_indx)
-                    local_project(lmbda_c_eq_tilde___nu_val, self.V_DG_scalar, self.V_lmbda_c_eq_tilde)
+                    lmbda_c_eq_tilde___nu_chunk_val = self.lmbda_c_eq_tilde_ufl_fenics_mesh_func(nu_indx)
+                    local_project(lmbda_c_eq_tilde___nu_chunk_val, self.V_DG_scalar, self.lmbda_c_eq_tilde_val)
                     MPI.barrier(MPI.comm_world)
-                    self.lmbda_c_eq_tilde_chunks_val[meshpoint_indx][nu_chunk_indx] = peval(self.V_lmbda_c_eq_tilde, self.meshpoints_list[meshpoint_indx])
+                    self.lmbda_c_eq_tilde_chunks_val[meshpoint_indx][nu_chunk_indx] = peval(self.lmbda_c_eq_tilde_val, self.meshpoints_list[meshpoint_indx])
             self.lmbda_c_eq_tilde_chunks.append(deepcopy(self.lmbda_c_eq_tilde_chunks_val))
         
         if ppp["save_lmbda_nu_tilde_mesh"]:
             for nu_chunk_indx in range(self.nu_chunks_num):
                 nu_indx = self.nu_chunks_indx_in_nu_list[nu_chunk_indx]
-                lmbda_nu_tilde___nu_val = self.lmbda_nu_tilde_ufl_fenics_mesh_func(nu_indx)
-                local_project(lmbda_nu_tilde___nu_val, self.V_DG_scalar, self.V_lmbda_nu_tilde)
+                lmbda_nu_tilde___nu_chunk_val = self.lmbda_nu_tilde_ufl_fenics_mesh_func(nu_indx)
+                local_project(lmbda_nu_tilde___nu_chunk_val, self.V_DG_scalar, self.lmbda_nu_tilde_val)
 
                 nu_str = str(self.nu_list[nu_indx])
                 name_str = "Non-local segment stretch nu = " + nu_str
+                prmtr_str = "lmbda_nu_tilde nu = " + nu_str
 
-                self.V_lmbda_nu_tilde.rename(name_str, "")
-                self.file_results.write(self.V_lmbda_nu_tilde, self.t_val)
+                self.lmbda_nu_tilde_val.rename(name_str, prmtr_str)
+                self.file_results.write(self.lmbda_nu_tilde_val, self.t_val)
         
         if ppp["save_lmbda_nu_tilde_chunks"]:
             for meshpoint_indx in range(self.meshpoint_num):
                 for nu_chunk_indx in range(self.nu_chunks_num):
                     nu_indx = self.nu_chunks_indx_in_nu_list[nu_chunk_indx]
-                    lmbda_nu_tilde___nu_val = self.lmbda_nu_tilde_ufl_fenics_mesh_func(nu_indx)
-                    local_project(lmbda_nu_tilde___nu_val, self.V_DG_scalar, self.V_lmbda_nu_tilde)
+                    lmbda_nu_tilde___nu_chunk_val = self.lmbda_nu_tilde_ufl_fenics_mesh_func(nu_indx)
+                    local_project(lmbda_nu_tilde___nu_chunk_val, self.V_DG_scalar, self.lmbda_nu_tilde_val)
                     MPI.barrier(MPI.comm_world)
-                    self.lmbda_nu_tilde_chunks_val[meshpoint_indx][nu_chunk_indx] = peval(self.V_lmbda_nu_tilde, self.meshpoints_list[meshpoint_indx])
+                    self.lmbda_nu_tilde_chunks_val[meshpoint_indx][nu_chunk_indx] = peval(self.lmbda_nu_tilde_val, self.meshpoints_list[meshpoint_indx])
             self.lmbda_nu_tilde_chunks.append(deepcopy(self.lmbda_nu_tilde_chunks_val))
         
         if ppp["save_lmbda_c_tilde_max_mesh"]:
@@ -1307,261 +1329,269 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
         if ppp["save_lmbda_c_eq_tilde_max_mesh"]:
             for nu_chunk_indx in range(self.nu_chunks_num):
                 nu_indx = self.nu_chunks_indx_in_nu_list[nu_chunk_indx]
-                lmbda_c_eq_tilde_max___nu_val = self.lmbda_c_eq_tilde_max_ufl_fenics_mesh_func(nu_indx)
-                local_project(lmbda_c_eq_tilde_max___nu_val, self.V_DG_scalar, self.V_lmbda_c_eq_tilde_max)
+                lmbda_c_eq_tilde_max___nu_chunk_val = self.lmbda_c_eq_tilde_max_ufl_fenics_mesh_func(nu_indx)
+                local_project(lmbda_c_eq_tilde_max___nu_chunk_val, self.V_DG_scalar, self.lmbda_c_eq_tilde_max_val)
 
                 nu_str = str(self.nu_list[nu_indx])
                 name_str = "Maximal non-local equilibrium chain stretch nu = " + nu_str
+                prmtr_str = "lmbda_c_eq_tilde_max nu = " + nu_str
 
-                self.V_lmbda_c_eq_tilde_max.rename(name_str, "")
-                self.file_results.write(self.V_lmbda_c_eq_tilde_max, self.t_val)
+                self.lmbda_c_eq_tilde_max_val.rename(name_str, prmtr_str)
+                self.file_results.write(self.lmbda_c_eq_tilde_max_val, self.t_val)
         
         if ppp["save_lmbda_c_eq_tilde_max_chunks"]:
             for meshpoint_indx in range(self.meshpoint_num):
                 for nu_chunk_indx in range(self.nu_chunks_num):
                     nu_indx = self.nu_chunks_indx_in_nu_list[nu_chunk_indx]
-                    lmbda_c_eq_tilde_max___nu_val = self.lmbda_c_eq_tilde_max_ufl_fenics_mesh_func(nu_indx)
-                    local_project(lmbda_c_eq_tilde_max___nu_val, self.V_DG_scalar, self.V_lmbda_c_eq_tilde_max)
+                    lmbda_c_eq_tilde_max___nu_chunk_val = self.lmbda_c_eq_tilde_max_ufl_fenics_mesh_func(nu_indx)
+                    local_project(lmbda_c_eq_tilde_max___nu_chunk_val, self.V_DG_scalar, self.lmbda_c_eq_tilde_max_val)
                     MPI.barrier(MPI.comm_world)
-                    self.lmbda_c_eq_tilde_max_chunks_val[meshpoint_indx][nu_chunk_indx] = peval(self.V_lmbda_c_eq_tilde_max, self.meshpoints_list[meshpoint_indx])
+                    self.lmbda_c_eq_tilde_max_chunks_val[meshpoint_indx][nu_chunk_indx] = peval(self.lmbda_c_eq_tilde_max_val, self.meshpoints_list[meshpoint_indx])
             self.lmbda_c_eq_tilde_max_chunks.append(deepcopy(self.lmbda_c_eq_tilde_max_chunks_val))
         
         if ppp["save_lmbda_nu_tilde_max_mesh"]:
             for nu_chunk_indx in range(self.nu_chunks_num):
                 nu_indx = self.nu_chunks_indx_in_nu_list[nu_chunk_indx]
-                lmbda_nu_tilde_max___nu_val = self.lmbda_nu_tilde_max_ufl_fenics_mesh_func(nu_indx)
-                local_project(lmbda_nu_tilde_max___nu_val, self.V_DG_scalar, self.V_lmbda_nu_tilde_max)
+                lmbda_nu_tilde_max___nu_chunk_val = self.lmbda_nu_tilde_max_ufl_fenics_mesh_func(nu_indx)
+                local_project(lmbda_nu_tilde_max___nu_chunk_val, self.V_DG_scalar, self.lmbda_nu_tilde_max_val)
 
                 nu_str = str(self.nu_list[nu_indx])
                 name_str = "Maximal non-local segment stretch nu = " + nu_str
+                prmtr_str = "lmbda_nu_tilde_max nu = " + nu_str
 
-                self.V_lmbda_nu_tilde_max.rename(name_str, "")
-                self.file_results.write(self.V_lmbda_nu_tilde_max, self.t_val)
+                self.lmbda_nu_tilde_max_val.rename(name_str, prmtr_str)
+                self.file_results.write(self.lmbda_nu_tilde_max_val, self.t_val)
         
         if ppp["save_lmbda_nu_tilde_max_chunks"]:
             for meshpoint_indx in range(self.meshpoint_num):
                 for nu_chunk_indx in range(self.nu_chunks_num):
                     nu_indx = self.nu_chunks_indx_in_nu_list[nu_chunk_indx]
-                    lmbda_nu_tilde_max___nu_val = self.lmbda_nu_tilde_max_ufl_fenics_mesh_func(nu_indx)
-                    local_project(lmbda_nu_tilde_max___nu_val, self.V_DG_scalar, self.V_lmbda_nu_tilde_max)
+                    lmbda_nu_tilde_max___nu_chunk_val = self.lmbda_nu_tilde_max_ufl_fenics_mesh_func(nu_indx)
+                    local_project(lmbda_nu_tilde_max___nu_chunk_val, self.V_DG_scalar, self.lmbda_nu_tilde_max_val)
                     MPI.barrier(MPI.comm_world)
-                    self.lmbda_nu_tilde_max_chunks_val[meshpoint_indx][nu_chunk_indx] = peval(self.V_lmbda_nu_tilde_max, self.meshpoints_list[meshpoint_indx])
+                    self.lmbda_nu_tilde_max_chunks_val[meshpoint_indx][nu_chunk_indx] = peval(self.lmbda_nu_tilde_max_val, self.meshpoints_list[meshpoint_indx])
             self.lmbda_nu_tilde_max_chunks.append(deepcopy(self.lmbda_nu_tilde_max_chunks_val))
         
         if ppp["save_upsilon_c_mesh"]:
             for nu_chunk_indx in range(self.nu_chunks_num):
                 nu_indx = self.nu_chunks_indx_in_nu_list[nu_chunk_indx]
-                upsilon_c___nu_val = self.upsilon_c_ufl_fenics_mesh_func(nu_indx)
-                local_project(upsilon_c___nu_val, self.V_DG_scalar, self.V_upsilon_c)
+                upsilon_c___nu_chunk_val = self.upsilon_c_ufl_fenics_mesh_func(nu_indx)
+                local_project(upsilon_c___nu_chunk_val, self.V_DG_scalar, self.upsilon_c_val)
 
                 nu_str = str(self.nu_list[nu_indx])
                 name_str  = "Chain survival nu = " + nu_str
+                prmtr_str = "upsilon_c nu = " + nu_str
 
-                self.V_upsilon_c.rename(name_str, "")
-                self.file_results.write(self.V_upsilon_c, self.t_val)
+                self.upsilon_c_val.rename(name_str, prmtr_str)
+                self.file_results.write(self.upsilon_c_val, self.t_val)
         
         if ppp["save_upsilon_c_chunks"]:
             for meshpoint_indx in range(self.meshpoint_num):
                 for nu_chunk_indx in range(self.nu_chunks_num):
                     nu_indx = self.nu_chunks_indx_in_nu_list[nu_chunk_indx]
-                    upsilon_c___nu_val = self.upsilon_c_ufl_fenics_mesh_func(nu_indx)
-                    local_project(upsilon_c___nu_val, self.V_DG_scalar, self.V_upsilon_c)
+                    upsilon_c___nu_chunk_val = self.upsilon_c_ufl_fenics_mesh_func(nu_indx)
+                    local_project(upsilon_c___nu_chunk_val, self.V_DG_scalar, self.upsilon_c_val)
                     MPI.barrier(MPI.comm_world)
-                    self.upsilon_c_chunks_val[meshpoint_indx][nu_chunk_indx] = peval(self.V_upsilon_c, self.meshpoints_list[meshpoint_indx])
+                    self.upsilon_c_chunks_val[meshpoint_indx][nu_chunk_indx] = peval(self.upsilon_c_val, self.meshpoints_list[meshpoint_indx])
             self.upsilon_c_chunks.append(deepcopy(self.upsilon_c_chunks_val))
         
         if ppp["save_Upsilon_c_mesh"]:
-            Upsilon_c_val = self.Upsilon_c_ufl_fenics_mesh_func()
-            local_project(Upsilon_c_val, self.V_DG_scalar, self.V_Upsilon_c)
-            self.V_Upsilon_c.rename("Average chain survival", "")
-            self.file_results.write(self.V_Upsilon_c, self.t_val)
+            Upsilon_c_chunk_val = self.Upsilon_c_ufl_fenics_mesh_func()
+            local_project(Upsilon_c_chunk_val, self.V_DG_scalar, self.Upsilon_c_val)
+            self.Upsilon_c_val.rename("Average chain survival", "Upsilon_c")
+            self.file_results.write(self.Upsilon_c_val, self.t_val)
         
         if ppp["save_Upsilon_c_chunks"]:
-            Upsilon_c_val = self.Upsilon_c_ufl_fenics_mesh_func()
-            local_project(Upsilon_c_val, self.V_DG_scalar, self.V_Upsilon_c)
+            Upsilon_c_chunk_val = self.Upsilon_c_ufl_fenics_mesh_func()
+            local_project(Upsilon_c_chunk_val, self.V_DG_scalar, self.Upsilon_c_val)
             for meshpoint_indx in range(self.meshpoint_num):
                 MPI.barrier(MPI.comm_world)
-                self.Upsilon_c_chunks_val[meshpoint_indx] = peval(self.V_Upsilon_c, self.meshpoints_list[meshpoint_indx])
+                self.Upsilon_c_chunks_val[meshpoint_indx] = peval(self.Upsilon_c_val, self.meshpoints_list[meshpoint_indx])
             self.Upsilon_c_chunks.append(deepcopy(self.Upsilon_c_chunks_val))
         
         if ppp["save_d_c_mesh"]:
             for nu_chunk_indx in range(self.nu_chunks_num):
                 nu_indx = self.nu_chunks_indx_in_nu_list[nu_chunk_indx]
-                d_c___nu_val = self.d_c_ufl_fenics_mesh_func(nu_indx)
-                local_project(d_c___nu_val, self.V_DG_scalar, self.V_d_c)
+                d_c___nu_chunk_val = self.d_c_ufl_fenics_mesh_func(nu_indx)
+                local_project(d_c___nu_chunk_val, self.V_DG_scalar, self.d_c_val)
 
                 nu_str = str(self.nu_list[nu_indx])
                 name_str  = "Chain damage nu = " + nu_str
+                prmtr_str = "d_c nu = " + nu_str
 
-                self.V_d_c.rename(name_str, "")
-                self.file_results.write(self.V_d_c, self.t_val)
+                self.d_c_val.rename(name_str, prmtr_str)
+                self.file_results.write(self.d_c_val, self.t_val)
         
         if ppp["save_d_c_chunks"]:
             for meshpoint_indx in range(self.meshpoint_num):
                 for nu_chunk_indx in range(self.nu_chunks_num):
                     nu_indx = self.nu_chunks_indx_in_nu_list[nu_chunk_indx]
-                    d_c___nu_val = self.d_c_ufl_fenics_mesh_func(nu_indx)
-                    local_project(d_c___nu_val, self.V_DG_scalar, self.V_d_c)
+                    d_c___nu_chunk_val = self.d_c_ufl_fenics_mesh_func(nu_indx)
+                    local_project(d_c___nu_chunk_val, self.V_DG_scalar, self.d_c_val)
                     MPI.barrier(MPI.comm_world)
-                    self.d_c_chunks_val[meshpoint_indx][nu_chunk_indx] = peval(self.V_d_c, self.meshpoints_list[meshpoint_indx])
+                    self.d_c_chunks_val[meshpoint_indx][nu_chunk_indx] = peval(self.d_c_val, self.meshpoints_list[meshpoint_indx])
             self.d_c_chunks.append(deepcopy(self.d_c_chunks_val))
         
         if ppp["save_D_c_mesh"]:
-            D_c_val = self.D_c_ufl_fenics_mesh_func()
-            local_project(D_c_val, self.V_DG_scalar, self.V_D_c)
-            self.V_D_c.rename("Average chain damage", "")
-            self.file_results.write(self.V_D_c, self.t_val)
+            D_c_chunk_val = self.D_c_ufl_fenics_mesh_func()
+            local_project(D_c_chunk_val, self.V_DG_scalar, self.D_c_val)
+            self.D_c_val.rename("Average chain damage", "D_c")
+            self.file_results.write(self.D_c_val, self.t_val)
         
         if ppp["save_D_c_chunks"]:
-            D_c_val = self.D_c_ufl_fenics_mesh_func()
-            local_project(D_c_val, self.V_DG_scalar, self.V_D_c)
+            D_c_chunk_val = self.D_c_ufl_fenics_mesh_func()
+            local_project(D_c_chunk_val, self.V_DG_scalar, self.D_c_val)
             for meshpoint_indx in range(self.meshpoint_num):
                 MPI.barrier(MPI.comm_world)
-                self.D_c_chunks_val[meshpoint_indx] = peval(self.V_D_c, self.meshpoints_list[meshpoint_indx])
+                self.D_c_chunks_val[meshpoint_indx] = peval(self.D_c_val, self.meshpoints_list[meshpoint_indx])
             self.D_c_chunks.append(deepcopy(self.D_c_chunks_val))
         
         if ppp["save_epsilon_cnu_diss_hat_mesh"]:
             for nu_chunk_indx in range(self.nu_chunks_num):
                 nu_indx = self.nu_chunks_indx_in_nu_list[nu_chunk_indx]
-                epsilon_cnu_diss_hat___nu_val = self.epsilon_cnu_diss_hat_ufl_fenics_mesh_func(nu_indx)
-                local_project(epsilon_cnu_diss_hat___nu_val, self.V_DG_scalar, self.V_epsilon_cnu_diss_hat)
+                epsilon_cnu_diss_hat___nu_chunk_val = self.epsilon_cnu_diss_hat_ufl_fenics_mesh_func(nu_indx)
+                local_project(epsilon_cnu_diss_hat___nu_chunk_val, self.V_DG_scalar, self.epsilon_cnu_diss_hat_val)
 
                 nu_str = str(self.nu_list[nu_indx])
                 name_str = "Per segment nondimensional dissipated chain scission energy nu = " + nu_str
+                prmtr_str = "epsilon_cnu_diss_hat nu = " + nu_str
 
-                self.V_epsilon_cnu_diss_hat.rename(name_str, "")
-                self.file_results.write(self.V_epsilon_cnu_diss_hat, self.t_val)
+                self.epsilon_cnu_diss_hat_val.rename(name_str, prmtr_str)
+                self.file_results.write(self.epsilon_cnu_diss_hat_val, self.t_val)
         
         if ppp["save_epsilon_cnu_diss_hat_chunks"]:
             for meshpoint_indx in range(self.meshpoint_num):
                 for nu_chunk_indx in range(self.nu_chunks_num):
                     nu_indx = self.nu_chunks_indx_in_nu_list[nu_chunk_indx]
-                    epsilon_cnu_diss_hat___nu_val = self.epsilon_cnu_diss_hat_ufl_fenics_mesh_func(nu_indx)
-                    local_project(epsilon_cnu_diss_hat___nu_val, self.V_DG_scalar, self.V_epsilon_cnu_diss_hat)
+                    epsilon_cnu_diss_hat___nu_chunk_val = self.epsilon_cnu_diss_hat_ufl_fenics_mesh_func(nu_indx)
+                    local_project(epsilon_cnu_diss_hat___nu_chunk_val, self.V_DG_scalar, self.epsilon_cnu_diss_hat_val)
                     MPI.barrier(MPI.comm_world)
-                    self.epsilon_cnu_diss_hat_chunks_val[meshpoint_indx][nu_chunk_indx] = peval(self.V_epsilon_cnu_diss_hat, self.meshpoints_list[meshpoint_indx])
+                    self.epsilon_cnu_diss_hat_chunks_val[meshpoint_indx][nu_chunk_indx] = peval(self.epsilon_cnu_diss_hat_val, self.meshpoints_list[meshpoint_indx])
             self.epsilon_cnu_diss_hat_chunks.append(deepcopy(self.epsilon_cnu_diss_hat_chunks_val))
         
         if ppp["save_Epsilon_cnu_diss_hat_mesh"]:
-            Epsilon_cnu_diss_hat_val = self.Epsilon_cnu_diss_hat_ufl_fenics_mesh_func()
-            local_project(Epsilon_cnu_diss_hat_val, self.V_DG_scalar, self.V_Epsilon_cnu_diss_hat)
-            self.V_Epsilon_cnu_diss_hat.rename("Average per segment nondimensional dissipated chain scission energy", "")
-            self.file_results.write(self.V_Epsilon_cnu_diss_hat, self.t_val)
+            Epsilon_cnu_diss_hat_chunk_val = self.Epsilon_cnu_diss_hat_ufl_fenics_mesh_func()
+            local_project(Epsilon_cnu_diss_hat_chunk_val, self.V_DG_scalar, self.Epsilon_cnu_diss_hat_val)
+            self.Epsilon_cnu_diss_hat_val.rename("Average per segment nondimensional dissipated chain scission energy", "Epsilon_cnu_diss_hat")
+            self.file_results.write(self.Epsilon_cnu_diss_hat_val, self.t_val)
         
         if ppp["save_Epsilon_cnu_diss_hat_chunks"]:
-            Epsilon_cnu_diss_hat_val = self.Epsilon_cnu_diss_hat_ufl_fenics_mesh_func()
-            local_project(Epsilon_cnu_diss_hat_val, self.V_DG_scalar, self.V_Epsilon_cnu_diss_hat)
+            Epsilon_cnu_diss_hat_chunk_val = self.Epsilon_cnu_diss_hat_ufl_fenics_mesh_func()
+            local_project(Epsilon_cnu_diss_hat_chunk_val, self.V_DG_scalar, self.Epsilon_cnu_diss_hat_val)
             for meshpoint_indx in range(self.meshpoint_num):
                 MPI.barrier(MPI.comm_world)
-                self.Epsilon_cnu_diss_hat_chunks_val[meshpoint_indx] = peval(self.V_Epsilon_cnu_diss_hat, self.meshpoints_list[meshpoint_indx])
+                self.Epsilon_cnu_diss_hat_chunks_val[meshpoint_indx] = peval(self.Epsilon_cnu_diss_hat_val, self.meshpoints_list[meshpoint_indx])
             self.Epsilon_cnu_diss_hat_chunks.append(deepcopy(self.Epsilon_cnu_diss_hat_chunks_val))
         
         if ppp["save_epsilon_c_diss_hat_mesh"]:
             for nu_chunk_indx in range(self.nu_chunks_num):
                 nu_indx = self.nu_chunks_indx_in_nu_list[nu_chunk_indx]
-                epsilon_c_diss_hat___nu_val = self.epsilon_c_diss_hat_ufl_fenics_mesh_func(nu_indx)
-                local_project(epsilon_c_diss_hat___nu_val, self.V_DG_scalar, self.V_epsilon_c_diss_hat)
+                epsilon_c_diss_hat___nu_chunk_val = self.epsilon_c_diss_hat_ufl_fenics_mesh_func(nu_indx)
+                local_project(epsilon_c_diss_hat___nu_chunk_val, self.V_DG_scalar, self.epsilon_c_diss_hat_val)
 
                 nu_str = str(self.nu_list[nu_indx])
                 name_str = "Nondimensional dissipated chain scission energy nu = " + nu_str
+                prmtr_str = "epsilon_c_diss_hat nu = " + nu_str
 
-                self.V_epsilon_c_diss_hat.rename(name_str, "")
-                self.file_results.write(self.V_epsilon_c_diss_hat, self.t_val)
+                self.epsilon_c_diss_hat_val.rename(name_str, prmtr_str)
+                self.file_results.write(self.epsilon_c_diss_hat_val, self.t_val)
         
         if ppp["save_epsilon_c_diss_hat_chunks"]:
             for meshpoint_indx in range(self.meshpoint_num):
                 for nu_chunk_indx in range(self.nu_chunks_num):
                     nu_indx = self.nu_chunks_indx_in_nu_list[nu_chunk_indx]
-                    epsilon_c_diss_hat___nu_val = self.epsilon_c_diss_hat_ufl_fenics_mesh_func(nu_indx)
-                    local_project(epsilon_c_diss_hat___nu_val, self.V_DG_scalar, self.V_epsilon_c_diss_hat)
+                    epsilon_c_diss_hat___nu_chunk_val = self.epsilon_c_diss_hat_ufl_fenics_mesh_func(nu_indx)
+                    local_project(epsilon_c_diss_hat___nu_chunk_val, self.V_DG_scalar, self.epsilon_c_diss_hat_val)
                     MPI.barrier(MPI.comm_world)
-                    self.epsilon_c_diss_hat_chunks_val[meshpoint_indx][nu_chunk_indx] = peval(self.V_epsilon_c_diss_hat, self.meshpoints_list[meshpoint_indx])
+                    self.epsilon_c_diss_hat_chunks_val[meshpoint_indx][nu_chunk_indx] = peval(self.epsilon_c_diss_hat_val, self.meshpoints_list[meshpoint_indx])
             self.epsilon_c_diss_hat_chunks.append(deepcopy(self.epsilon_c_diss_hat_chunks_val))
         
         if ppp["save_Epsilon_c_diss_hat_mesh"]:
-            Epsilon_c_diss_hat_val = self.Epsilon_c_diss_hat_ufl_fenics_mesh_func()
-            local_project(Epsilon_c_diss_hat_val, self.V_DG_scalar, self.V_Epsilon_c_diss_hat)
-            self.V_Epsilon_c_diss_hat.rename("Average nondimensional dissipated chain scission energy", "")
-            self.file_results.write(self.V_Epsilon_c_diss_hat, self.t_val)
+            Epsilon_c_diss_hat_chunk_val = self.Epsilon_c_diss_hat_ufl_fenics_mesh_func()
+            local_project(Epsilon_c_diss_hat_chunk_val, self.V_DG_scalar, self.Epsilon_c_diss_hat_val)
+            self.Epsilon_c_diss_hat_val.rename("Average nondimensional dissipated chain scission energy", "Epsilon_c_diss_hat")
+            self.file_results.write(self.Epsilon_c_diss_hat_val, self.t_val)
         
         if ppp["save_Epsilon_c_diss_hat_chunks"]:
-            Epsilon_c_diss_hat_val = self.Epsilon_c_diss_hat_ufl_fenics_mesh_func()
-            local_project(Epsilon_c_diss_hat_val, self.V_DG_scalar, self.V_Epsilon_c_diss_hat)
+            Epsilon_c_diss_hat_chunk_val = self.Epsilon_c_diss_hat_ufl_fenics_mesh_func()
+            local_project(Epsilon_c_diss_hat_chunk_val, self.V_DG_scalar, self.Epsilon_c_diss_hat_val)
             for meshpoint_indx in range(self.meshpoint_num):
                 MPI.barrier(MPI.comm_world)
-                self.Epsilon_c_diss_hat_chunks_val[meshpoint_indx] = peval(self.V_Epsilon_c_diss_hat, self.meshpoints_list[meshpoint_indx])
+                self.Epsilon_c_diss_hat_chunks_val[meshpoint_indx] = peval(self.Epsilon_c_diss_hat_val, self.meshpoints_list[meshpoint_indx])
             self.Epsilon_c_diss_hat_chunks.append(deepcopy(self.Epsilon_c_diss_hat_chunks_val))
         
         if ppp["save_overline_epsilon_cnu_diss_hat_mesh"]:
             for nu_chunk_indx in range(self.nu_chunks_num):
                 nu_indx = self.nu_chunks_indx_in_nu_list[nu_chunk_indx]
-                overline_epsilon_cnu_diss_hat___nu_val = self.overline_epsilon_cnu_diss_hat_ufl_fenics_mesh_func(nu_indx)
-                local_project(overline_epsilon_cnu_diss_hat___nu_val, self.V_DG_scalar, self.V_overline_epsilon_cnu_diss_hat)
+                overline_epsilon_cnu_diss_hat___nu_chunk_val = self.overline_epsilon_cnu_diss_hat_ufl_fenics_mesh_func(nu_indx)
+                local_project(overline_epsilon_cnu_diss_hat___nu_chunk_val, self.V_DG_scalar, self.overline_epsilon_cnu_diss_hat_val)
 
                 nu_str = str(self.nu_list[nu_indx])
                 name_str = "Per segment nondimensional scaled dissipated chain scission energy nu = " + nu_str
+                prmtr_str = "overline_epsilon_cnu_diss_hat nu = " + nu_str
 
-                self.V_overline_epsilon_cnu_diss_hat.rename(name_str, "")
-                self.file_results.write(self.V_overline_epsilon_cnu_diss_hat, self.t_val)
+                self.overline_epsilon_cnu_diss_hat_val.rename(name_str, prmtr_str)
+                self.file_results.write(self.overline_epsilon_cnu_diss_hat_val, self.t_val)
         
         if ppp["save_overline_epsilon_cnu_diss_hat_chunks"]:
             for meshpoint_indx in range(self.meshpoint_num):
                 for nu_chunk_indx in range(self.nu_chunks_num):
                     nu_indx = self.nu_chunks_indx_in_nu_list[nu_chunk_indx]
-                    overline_epsilon_cnu_diss_hat___nu_val = self.overline_epsilon_cnu_diss_hat_ufl_fenics_mesh_func(nu_indx)
-                    local_project(overline_epsilon_cnu_diss_hat___nu_val, self.V_DG_scalar, self.V_overline_epsilon_cnu_diss_hat)
+                    overline_epsilon_cnu_diss_hat___nu_chunk_val = self.overline_epsilon_cnu_diss_hat_ufl_fenics_mesh_func(nu_indx)
+                    local_project(overline_epsilon_cnu_diss_hat___nu_chunk_val, self.V_DG_scalar, self.overline_epsilon_cnu_diss_hat_val)
                     MPI.barrier(MPI.comm_world)
-                    self.overline_epsilon_cnu_diss_hat_chunks_val[meshpoint_indx][nu_chunk_indx] = peval(self.V_overline_epsilon_cnu_diss_hat, self.meshpoints_list[meshpoint_indx])
+                    self.overline_epsilon_cnu_diss_hat_chunks_val[meshpoint_indx][nu_chunk_indx] = peval(self.overline_epsilon_cnu_diss_hat_val, self.meshpoints_list[meshpoint_indx])
             self.overline_epsilon_cnu_diss_hat_chunks.append(deepcopy(self.overline_epsilon_cnu_diss_hat_chunks_val))
         
         if ppp["save_overline_Epsilon_cnu_diss_hat_mesh"]:
-            overline_Epsilon_cnu_diss_hat_val = self.overline_Epsilon_cnu_diss_hat_ufl_fenics_mesh_func()
-            local_project(overline_Epsilon_cnu_diss_hat_val, self.V_DG_scalar, self.V_overline_Epsilon_cnu_diss_hat)
-            self.V_overline_Epsilon_cnu_diss_hat.rename("Average per segment nondimensional scaled dissipated chain scission energy", "")
-            self.file_results.write(self.V_overline_Epsilon_cnu_diss_hat, self.t_val)
+            overline_Epsilon_cnu_diss_hat_chunk_val = self.overline_Epsilon_cnu_diss_hat_ufl_fenics_mesh_func()
+            local_project(overline_Epsilon_cnu_diss_hat_chunk_val, self.V_DG_scalar, self.overline_Epsilon_cnu_diss_hat_val)
+            self.overline_Epsilon_cnu_diss_hat_val.rename("Average per segment nondimensional scaled dissipated chain scission energy", "overline_Epsilon_cnu_diss_hat")
+            self.file_results.write(self.overline_Epsilon_cnu_diss_hat_val, self.t_val)
         
         if ppp["save_overline_Epsilon_cnu_diss_hat_chunks"]:
-            overline_Epsilon_cnu_diss_hat_val = self.overline_Epsilon_cnu_diss_hat_ufl_fenics_mesh_func()
-            local_project(overline_Epsilon_cnu_diss_hat_val, self.V_DG_scalar, self.V_overline_Epsilon_cnu_diss_hat)
+            overline_Epsilon_cnu_diss_hat_chunk_val = self.overline_Epsilon_cnu_diss_hat_ufl_fenics_mesh_func()
+            local_project(overline_Epsilon_cnu_diss_hat_chunk_val, self.V_DG_scalar, self.overline_Epsilon_cnu_diss_hat_val)
             for meshpoint_indx in range(self.meshpoint_num):
                 MPI.barrier(MPI.comm_world)
-                self.overline_Epsilon_cnu_diss_hat_chunks_val[meshpoint_indx] = peval(self.V_overline_Epsilon_cnu_diss_hat, self.meshpoints_list[meshpoint_indx])
+                self.overline_Epsilon_cnu_diss_hat_chunks_val[meshpoint_indx] = peval(self.overline_Epsilon_cnu_diss_hat_val, self.meshpoints_list[meshpoint_indx])
             self.overline_Epsilon_cnu_diss_hat_chunks.append(deepcopy(self.overline_Epsilon_cnu_diss_hat_chunks_val))
         
         if ppp["save_overline_epsilon_c_diss_hat_mesh"]:
             for nu_chunk_indx in range(self.nu_chunks_num):
                 nu_indx = self.nu_chunks_indx_in_nu_list[nu_chunk_indx]
-                overline_epsilon_c_diss_hat___nu_val = self.overline_epsilon_c_diss_hat_ufl_fenics_mesh_func(nu_indx)
-                local_project(overline_epsilon_c_diss_hat___nu_val, self.V_DG_scalar, self.V_overline_epsilon_c_diss_hat)
+                overline_epsilon_c_diss_hat___nu_chunk_val = self.overline_epsilon_c_diss_hat_ufl_fenics_mesh_func(nu_indx)
+                local_project(overline_epsilon_c_diss_hat___nu_chunk_val, self.V_DG_scalar, self.overline_epsilon_c_diss_hat_val)
 
                 nu_str = str(self.nu_list[nu_indx])
                 name_str = "Nondimensional scaled dissipated chain scission energy nu = " + nu_str
+                prmtr_str = "overline_epsilon_c_diss_hat nu = " + nu_str
 
-                self.V_overline_epsilon_c_diss_hat.rename(name_str, "")
-                self.file_results.write(self.V_overline_epsilon_c_diss_hat, self.t_val)
+                self.overline_epsilon_c_diss_hat_val.rename(name_str, prmtr_str)
+                self.file_results.write(self.overline_epsilon_c_diss_hat_val, self.t_val)
         
         if ppp["save_overline_epsilon_c_diss_hat_chunks"]:
             for meshpoint_indx in range(self.meshpoint_num):
                 for nu_chunk_indx in range(self.nu_chunks_num):
                     nu_indx = self.nu_chunks_indx_in_nu_list[nu_chunk_indx]
-                    overline_epsilon_c_diss_hat___nu_val = self.overline_epsilon_c_diss_hat_ufl_fenics_mesh_func(nu_indx)
-                    local_project(overline_epsilon_c_diss_hat___nu_val, self.V_DG_scalar, self.V_overline_epsilon_c_diss_hat)
+                    overline_epsilon_c_diss_hat___nu_chunk_val = self.overline_epsilon_c_diss_hat_ufl_fenics_mesh_func(nu_indx)
+                    local_project(overline_epsilon_c_diss_hat___nu_chunk_val, self.V_DG_scalar, self.overline_epsilon_c_diss_hat_val)
                     MPI.barrier(MPI.comm_world)
-                    self.overline_epsilon_c_diss_hat_chunks_val[meshpoint_indx][nu_chunk_indx] = peval(self.V_overline_epsilon_c_diss_hat, self.meshpoints_list[meshpoint_indx])
+                    self.overline_epsilon_c_diss_hat_chunks_val[meshpoint_indx][nu_chunk_indx] = peval(self.overline_epsilon_c_diss_hat_val, self.meshpoints_list[meshpoint_indx])
             self.overline_epsilon_c_diss_hat_chunks.append(deepcopy(self.overline_epsilon_c_diss_hat_chunks_val))
         
         if ppp["save_overline_Epsilon_c_diss_hat_mesh"]:
-            overline_Epsilon_c_diss_hat_val = self.overline_Epsilon_c_diss_hat_ufl_fenics_mesh_func()
-            local_project(overline_Epsilon_c_diss_hat_val, self.V_DG_scalar, self.V_overline_Epsilon_c_diss_hat)
-            self.V_overline_Epsilon_c_diss_hat.rename("Average nondimensional scaled dissipated chain scission energy", "")
-            self.file_results.write(self.V_overline_Epsilon_c_diss_hat, self.t_val)
+            overline_Epsilon_c_diss_hat_chunk_val = self.overline_Epsilon_c_diss_hat_ufl_fenics_mesh_func()
+            local_project(overline_Epsilon_c_diss_hat_chunk_val, self.V_DG_scalar, self.overline_Epsilon_c_diss_hat_val)
+            self.overline_Epsilon_c_diss_hat_val.rename("Average nondimensional scaled dissipated chain scission energy", "overline_Epsilon_c_diss_hat")
+            self.file_results.write(self.overline_Epsilon_c_diss_hat_val, self.t_val)
         
         if ppp["save_overline_Epsilon_c_diss_hat_chunks"]:
-            overline_Epsilon_c_diss_hat_val = self.overline_Epsilon_c_diss_hat_ufl_fenics_mesh_func()
-            local_project(overline_Epsilon_c_diss_hat_val, self.V_DG_scalar, self.V_overline_Epsilon_c_diss_hat)
+            overline_Epsilon_c_diss_hat_chunk_val = self.overline_Epsilon_c_diss_hat_ufl_fenics_mesh_func()
+            local_project(overline_Epsilon_c_diss_hat_chunk_val, self.V_DG_scalar, self.overline_Epsilon_c_diss_hat_val)
             for meshpoint_indx in range(self.meshpoint_num):
                 MPI.barrier(MPI.comm_world)
-                self.overline_Epsilon_c_diss_hat_chunks_val[meshpoint_indx] = peval(self.V_overline_Epsilon_c_diss_hat, self.meshpoints_list[meshpoint_indx])
+                self.overline_Epsilon_c_diss_hat_chunks_val[meshpoint_indx] = peval(self.overline_Epsilon_c_diss_hat_val, self.meshpoints_list[meshpoint_indx])
             self.overline_Epsilon_c_diss_hat_chunks.append(deepcopy(self.overline_Epsilon_c_diss_hat_chunks_val))
         
         if ppp["save_u_mesh"]:
@@ -1577,9 +1607,9 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
             sys.exit(error_message)
         
         if ppp["save_F_mesh"]:
-            local_project(self.F, self.V_DG_tensor, self.V_F)
-            self.V_F.rename("Deformation gradient", "")
-            self.file_results.write(self.V_F, self.t_val)
+            local_project(self.F, self.V_DG_tensor, self.F_val)
+            self.F_val.rename("Deformation gradient", "F")
+            self.file_results.write(self.F_val, self.t_val)
         
         if ppp["save_F_chunks"]:
             # self.F_chunks_post_processing()
@@ -1590,21 +1620,21 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
             sys.exit(error_message)
 
         if ppp["save_sigma_mesh"]:
-            sigma_val = self.cauchy_stress_ufl_fenics_mesh_func()
-            sigma_penalty_term_val = self.cauchy_stress_penalty_term_ufl_fenics_mesh_func()
-            sigma_less_penalty_term_val = sigma_val - sigma_penalty_term_val
+            sigma_chunk_val = self.cauchy_stress_ufl_fenics_mesh_func()
+            sigma_penalty_term_chunk_val = self.cauchy_stress_penalty_term_ufl_fenics_mesh_func()
+            sigma_less_penalty_term_chunk_val = sigma_chunk_val - sigma_penalty_term_chunk_val
 
-            local_project(sigma_val, self.V_DG_tensor, self.V_sigma)
-            local_project(sigma_penalty_term_val, self.V_DG_tensor, self.V_sigma_penalty_term)
-            local_project(sigma_less_penalty_term_val, self.V_DG_tensor, self.V_sigma_less_penalty_term)
+            local_project(sigma_chunk_val, self.V_DG_tensor, self.sigma_val)
+            local_project(sigma_penalty_term_chunk_val, self.V_DG_tensor, self.sigma_penalty_term_val)
+            local_project(sigma_less_penalty_term_chunk_val, self.V_DG_tensor, self.sigma_less_penalty_term_val)
 
-            self.V_sigma.rename("Normalized Cauchy stress", "")
-            self.V_sigma_penalty_term.rename("Normalized Cauchy stress penalty term", "")
-            self.V_sigma_less_penalty_term.rename("Normalized Cauchy stress less penalty term", "sigma_less_penalty_term_val")
+            self.sigma_val.rename("Normalized Cauchy stress", "sigma")
+            self.sigma_penalty_term_val.rename("Normalized Cauchy stress penalty term", "sigma penalty term")
+            self.sigma_less_penalty_term_val.rename("Normalized Cauchy stress less penalty term", "sigma less penalty term")
 
-            self.file_results.write(self.V_sigma, self.t_val)
-            self.file_results.write(self.V_sigma_penalty_term, self.t_val)
-            self.file_results.write(self.V_sigma_less_penalty_term, self.t_val)
+            self.file_results.write(self.sigma_val, self.t_val)
+            self.file_results.write(self.sigma_penalty_term_val, self.t_val)
+            self.file_results.write(self.sigma_less_penalty_term_val, self.t_val)
         
         if ppp["save_sigma_chunks"]:
             # self.sigma_chunks_post_processing()
@@ -1982,38 +2012,41 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
         """
         Gradient activity
         """
-        # dp = self.parameters["deformation"]
+        dp = self.parameters["deformation"]
 
-        # D_c_val = self.D_c_ufl_fenics_mesh_func()
-        # g_val = 0.5 * (cos(DOLFIN_PI*D_c_val)+1.) * (1.-dp["k_cond_val"]) + dp["k_cond_val"]
-        # return g_val
-        return Constant(1.)
+        D_c_val = self.D_c_ufl_fenics_mesh_func()
+        n = Constant(5)
+        g_val = ((1.-dp["k_cond_val"])*exp(-n*D_c_val)+dp["k_cond_val"]-exp(-n)) / (1-exp(-n)) # 0.5 * (cos(DOLFIN_PI*D_c_val)+1.) * (1.-dp["k_cond_val"]) + dp["k_cond_val"]
+        return g_val
+        
+        # return Constant(1.)
     
     def H_tilde_ufl_fenics_mesh_func(self):
         """
         Normalized anisotropic interaction tensor
         """
-        # sigma_val = self.cauchy_stress_ufl_fenics_mesh_func()
-        # I_sigma_val = tr(sigma_val)
-        # III_sigma_val = det(sigma_val)
+        sigma_val = self.cauchy_stress_ufl_fenics_mesh_func()
+        I_sigma_val = tr(sigma_val)
+        III_sigma_val = det(sigma_val)
 
-        # sigma_1_val = (I_sigma_val+sqrt(I_sigma_val**2-4.*III_sigma_val+DOLFIN_EPS)) / 2.
-        # sigma_2_val = (I_sigma_val-sqrt(I_sigma_val**2-4.*III_sigma_val+DOLFIN_EPS)) / 2.
+        sigma_1_val = (I_sigma_val+sqrt(I_sigma_val**2-4.*III_sigma_val+DOLFIN_EPS)) / 2.
+        sigma_2_val = (I_sigma_val-sqrt(I_sigma_val**2-4.*III_sigma_val+DOLFIN_EPS)) / 2.
 
-        # sigma_max_val = max_ufl_fenics_mesh_func(sigma_1_val, sigma_2_val)
+        sigma_max_val = max_ufl_fenics_mesh_func(sigma_1_val, sigma_2_val)
 
-        # Z_1_val_dnmntr = sigma_1_val - sigma_2_val
-        # dolfin_eps_sgn = conditional(ge(Z_1_val_dnmntr, 0), DOLFIN_EPS, -1*DOLFIN_EPS)
-        # Z_1_val_dnmntr = conditional(ge(abs(Z_1_val_dnmntr), DOLFIN_EPS), Z_1_val_dnmntr, dolfin_eps_sgn)
-        # Z_1_val = 1. / Z_1_val_dnmntr * (sigma_val-sigma_2_val*self.I)
+        Z_1_val_dnmntr = sigma_1_val - sigma_2_val
+        dolfin_eps_sgn = conditional(ge(Z_1_val_dnmntr, 0), DOLFIN_EPS, -1*DOLFIN_EPS)
+        Z_1_val_dnmntr = conditional(ge(abs(Z_1_val_dnmntr), DOLFIN_EPS), Z_1_val_dnmntr, dolfin_eps_sgn)
+        Z_1_val = (sigma_val-sigma_2_val*self.I) / Z_1_val_dnmntr
 
-        # Z_2_val_dnmntr = sigma_2_val - sigma_1_val
-        # dolfin_eps_sgn = conditional(ge(Z_2_val_dnmntr, 0), DOLFIN_EPS, -1*DOLFIN_EPS)
-        # Z_2_val_dnmntr = conditional(ge(abs(Z_2_val_dnmntr), DOLFIN_EPS), Z_2_val_dnmntr, dolfin_eps_sgn)
-        # Z_2_val = 1. / Z_2_val_dnmntr * (sigma_val-sigma_1_val*self.I)
+        Z_2_val_dnmntr = sigma_2_val - sigma_1_val
+        dolfin_eps_sgn = conditional(ge(Z_2_val_dnmntr, 0), DOLFIN_EPS, -1*DOLFIN_EPS)
+        Z_2_val_dnmntr = conditional(ge(abs(Z_2_val_dnmntr), DOLFIN_EPS), Z_2_val_dnmntr, dolfin_eps_sgn)
+        Z_2_val = (sigma_val-sigma_1_val*self.I) / Z_2_val_dnmntr
 
-        # H_tilde_val = (sigma_1_val/sigma_max_val)**2 * Z_1_val + (sigma_2_val/sigma_max_val)**2 * Z_2_val
-        # H_tilde_val = conditional(ge(abs(Z_1_val_dnmntr), DOLFIN_EPS), H_tilde_val, self.I)
-        # return H_tilde_val
-        return self.I
+        H_tilde_val = (sigma_1_val/sigma_max_val)**2 * Z_1_val + (sigma_2_val/sigma_max_val)**2 * Z_2_val
+        H_tilde_val = conditional(ge(abs(Z_1_val_dnmntr), DOLFIN_EPS), H_tilde_val, self.I)
+        return H_tilde_val
+        
+        # return self.I
 

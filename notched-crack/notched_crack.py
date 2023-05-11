@@ -80,8 +80,8 @@ class NotchedCrack(TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightCh
         T            = 298 # absolute room temperature, K
         beta         = 1./(k_B*T) # 1/J
         omega_0      = 1./(beta*hbar) # J/(J*sec) = 1/sec
-        zeta_nu_char = 537.6 # 298.9 # 100 # 50
-        kappa_nu     = 3197.5 # 912.2 # 2300 # 7500
+        zeta_nu_char = 298.9 # 537.6 # 298.9 # 100 # 50
+        kappa_nu     = 912.2 # 3197.5 # 912.2 # 2300 # 7500
         nu_b         = "None"
         zeta_b_char  = "None"
         kappa_b      = "None"
@@ -182,7 +182,7 @@ class NotchedCrack(TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightCh
         dp["tol_lmbda_c_tilde_val"] = 1e-3
 
         dp["strain_rate"] = 0.1 # 0.2 # 1/sec
-        dp["t_max"] = 33 # 30 # 13.6 # 13.5 # 16 # 100 # sec
+        dp["t_max"] = 20 # 33 # 30 # 13.6 # 13.5 # 16 # 100 # sec
         dp["t_step"] = 0.02 # 0.01 # 0.02 # sec
         dp["t_step_chunk_num"] = 10
 
@@ -515,6 +515,15 @@ class NotchedCrack(TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightCh
         dp = self.parameters["deformation"]
 
         return 1 + dp["strain_rate"]*(t-dp["t_min"])
+        # t_rel = t - dp["t_min"]
+        # t_def = dp["t_max"] - dp["t_min"]
+        # strain_max = dp["strain_rate"] * t_def
+        # strain_max_prop = 0.5
+        # strain_max_actual = strain_max_prop * strain_max
+        # F_val = (1 + dp["strain_rate"] * t_rel * np.heaviside(strain_max_actual-dp["strain_rate"]*t_rel, 0.5)
+        #          + (2*strain_max_actual-dp["strain_rate"]*t_rel) * np.heaviside(dp["strain_rate"]*t_rel-strain_max_actual, 0.5)
+        # )
+        # return F_val
     
     def initialize_lmbda(self):
         lmbda_y        = [] # unitless
@@ -1187,7 +1196,7 @@ if __name__ == '__main__':
     notch_fine_mesh_layer_level_num = 1
     fine_mesh_elem_size = 0.01
     coarse_mesh_elem_size = 0.01 # 0.01 # 0.25
-    l_nl = coarse_mesh_elem_size # 10*r_notch # 1.25*r_notch # 0.02 = 2*coarse_mesh_elem_size
+    l_nl = coarse_mesh_elem_size # coarse_mesh_elem_size # 10*r_notch # 1.25*r_notch # 0.02 = 2*coarse_mesh_elem_size
     problem = NotchedCrack(L, H, x_notch_point, r_notch, notch_fine_mesh_layer_level_num, fine_mesh_elem_size, coarse_mesh_elem_size, l_nl)
     problem.solve()
     problem.finalization()
