@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 from copy import deepcopy
 import textwrap
 
-class NotchedCrack(TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqualStrainRateIndependentCompositeuFJCNetworkNonlocalScissionNetworkFractureProblem):
+class RefinedNotchedCrack(TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqualStrainRateIndependentCompositeuFJCNetworkNonlocalScissionNetworkFractureProblem):
 
     def __init__(self, L, H, x_notch_point, r_notch, notch_fine_mesh_layer_level_num=2, fine_mesh_elem_size=0.001, coarse_mesh_elem_size=0.1, l_nl=0.1):
 
@@ -67,7 +67,7 @@ class NotchedCrack(TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightCh
             ugp.add("meshpoint_indx_"+str(meshpoint_indx)+"_name", meshpoints_name_list[meshpoint_indx])
         
         ugp.add("meshpoint_num", meshpoints_num)
-        ugp.add("meshtype", "notched_crack")
+        ugp.add("meshtype", "refined_notched_crack")
         
         gp.assign(ugp)
         
@@ -118,10 +118,13 @@ class NotchedCrack(TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightCh
 
         # Network-level damage
         d_c_lmbda_nu_crit_min = 1.001 # 1.001
-        d_c_lmbda_nu_crit_max = 1.005 # 1.005
+        d_c_lmbda_nu_crit_max = 1.2 # 1.005 # 1.005
 
         ump.add("d_c_lmbda_nu_crit_min", d_c_lmbda_nu_crit_min)
         ump.add("d_c_lmbda_nu_crit_max", d_c_lmbda_nu_crit_max)
+
+        # Non-local coupling modulus
+        ump.add("h_nl", 1e-9)
 
         # Non-local interaction length scale
         ump.add("l_nl", self.l_nl)
@@ -168,6 +171,9 @@ class NotchedCrack(TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightCh
         lmbda_c_crit_max = composite_ufjc_nu_max.lmbda_c_eq_crit / composite_ufjc_nu_max.A_nu
         ump.add("lmbda_c_tilde_lb", 0.0)
         ump.add("lmbda_c_tilde_ub", lmbda_c_crit_max)
+
+        lmbda_nu_crit_max = composite_ufjc_nu_max.lmbda_nu_crit
+        ump.add("d_c_lmbda_nu_crit_max", lmbda_nu_crit_max)
         
         # Define various characteristics of the deformation for the network
         ump.add("network_model", "statistical_mechanics_model")
@@ -185,23 +191,17 @@ class NotchedCrack(TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightCh
 
         mp.assign(ump)
 
-        # Finite element method parameters
-        femp = self.parameters["fem"]
-
-        femp["solver_algorithm"] = "monolithic" # "alternate_minimization" # "monolithic"
-        femp["solver_bounded"] = False # True
-
         # Deformation parameters
         dp = self.parameters["deformation"]
 
         dp["deformation_type"] = "uniaxial"
 
         dp["K__G"] = 10
-        dp["k_cond_val"] = 1.e-2 # 1.e-4
+        dp["k_cond_val"] = 1.e-3 # 1.e-4
         dp["tol_lmbda_c_tilde_val"] = 1e-3
 
         dp["strain_rate"] = 0.1 # 0.2 # 1/sec
-        dp["t_max"] = 8.32 # 6.2 # 5.8 # 4.4 # 30.0 # 33.0 # 30.0 # 13.6 # 13.5 # 16.0 # 100.0 # sec
+        dp["t_max"] = 40.0 # 6.2 # 5.8 # 4.4 # 30.0 # 33.0 # 30.0 # 13.6 # 13.5 # 16.0 # 100.0 # sec
         dp["t_step"] = 0.02 # 0.005 # 0.01 # 0.02 # sec
         dp["t_step_chunk_num"] = 2
 
@@ -212,8 +212,6 @@ class NotchedCrack(TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightCh
         ppp["save_lmbda_nu_chunks"] = True
         ppp["save_lmbda_c_eq_tilde_chunks"] = True
         ppp["save_lmbda_nu_tilde_chunks"] = True
-        ppp["save_lmbda_c_eq_tilde_max_chunks"] = True
-        ppp["save_lmbda_nu_tilde_max_chunks"] = True
         ppp["save_upsilon_c_chunks"] = True
         ppp["save_d_c_mesh"] = True
         ppp["save_d_c_chunks"] = True
@@ -228,9 +226,6 @@ class NotchedCrack(TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightCh
         # ppp["save_lmbda_c_tilde_chunks"] = False
         # ppp["save_lmbda_c_eq_tilde_chunks"] = False
         # ppp["save_lmbda_nu_tilde_chunks"] = False
-        # ppp["save_lmbda_c_tilde_max_chunks"] = False
-        # ppp["save_lmbda_c_eq_tilde_max_chunks"] = False
-        # ppp["save_lmbda_nu_tilde_max_chunks"] = False
         # ppp["save_upsilon_c_chunks"] = False
         # ppp["save_Upsilon_c_chunks"] = False
         # ppp["save_d_c_chunks"] = False
@@ -269,12 +264,6 @@ class NotchedCrack(TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightCh
         ppp["save_lmbda_c_eq_tilde_chunks"] = False
         ppp["save_lmbda_nu_tilde_mesh"] = False
         ppp["save_lmbda_nu_tilde_chunks"] = False
-        ppp["save_lmbda_c_tilde_max_mesh"] = False
-        ppp["save_lmbda_c_tilde_max_chunks"] = False
-        ppp["save_lmbda_c_eq_tilde_max_mesh"] = False
-        ppp["save_lmbda_c_eq_tilde_max_chunks"] = False
-        ppp["save_lmbda_nu_tilde_max_mesh"] = False
-        ppp["save_lmbda_nu_tilde_max_chunks"] = False
         ppp["save_g_mesh"] = False
         ppp["save_g_chunks"] = False
         ppp["save_upsilon_c_mesh"] = False
@@ -309,8 +298,6 @@ class NotchedCrack(TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightCh
         ppp["save_sigma_chunks"] = False
 
         ppp["save_u_mesh"] = True
-        ppp["save_lmbda_c_tilde_max_mesh"] = True
-        ppp["save_lmbda_c_tilde_max_chunks"] = True
         ppp["save_g_mesh"] = True
         ppp["save_g_chunks"] = True
         ppp["save_D_c_mesh"] = True
@@ -424,67 +411,16 @@ class NotchedCrack(TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightCh
                                                          }
 
         # solver_bounded_lmbda_c_tilde
-        self.solver_bounded_lmbda_c_tilde_parameters_dict = {"nonlinear_solver": "snes",
-                                                             "symmetric": True,
-                                                             "snes_solver": {"linear_solver": "umfpack",
-                                                                             "method": "vinewtonssls",
-                                                                             "line_search": "basic",
-                                                                             "maximum_iterations": 200,# 50
-                                                                             "absolute_tolerance": 1e-8,
-                                                                             "relative_tolerance": 1e-7,# 1e-5
-                                                                             "solution_tolerance": 1e-7,# 1e-5
-                                                                             "report": True,
-                                                                             "error_on_nonconvergence": False
-                                                                             }
-                                                                             }
+        self.solver_bounded_lmbda_c_tilde_parameters_dict = {"maximum_iterations": 100,
+                                                             "report": False,
+                                                             "line_search": "more-thuente",
+                                                             "linear_solver": "cg",
+                                                             "preconditioner" : "hypre_amg",
+                                                             "method": "tron",
+                                                             "gradient_absolute_tol": 1e-8,
+                                                             "gradient_relative_tol": 1e-8,
+                                                             "error_on_nonconvergence": True}
         
-        # solver_unbounded_lmbda_c_tilde
-        self.solver_unbounded_lmbda_c_tilde_parameters_dict = {"nonlinear_solver": "snes",
-                                                               "symmetric": True,
-                                                               "snes_solver": {"linear_solver": "mumps",
-                                                                               "method": "newtontr",
-                                                                               "line_search": "cp",
-                                                                               "preconditioner": "hypre_amg",
-                                                                               "maximum_iterations": 200,
-                                                                               "absolute_tolerance": 1e-8,
-                                                                               "relative_tolerance": 1e-7,
-                                                                               "solution_tolerance": 1e-7,
-                                                                               "report": True,
-                                                                               "error_on_nonconvergence": False
-                                                                               }
-                                                                               }
-        
-        # solver_bounded_monolithic
-        self.solver_bounded_monolithic_parameters_dict = {"nonlinear_solver": "snes",
-                                                          "symmetric": True,
-                                                          "snes_solver": {"linear_solver": "umfpack",
-                                                                          "method": "vinewtonssls",
-                                                                          "line_search": "basic",
-                                                                          "maximum_iterations": 200,#50
-                                                                          "absolute_tolerance": 1e-8,
-                                                                          "relative_tolerance": 1e-7,# 1e-5
-                                                                          "solution_tolerance": 1e-7,# 1e-5
-                                                                          "report": True,
-                                                                          "error_on_nonconvergence": False
-                                                                          }
-                                                                          }
-
-        # solver_unbounded_monolithic
-        self.solver_unbounded_monolithic_parameters_dict = {"nonlinear_solver": "snes",
-                                                            "symmetric": True,
-                                                            "snes_solver": {"linear_solver": "mumps",#"mumps",
-                                                                            "method": "newtontr",
-                                                                            "line_search": "cp",
-                                                                            "preconditioner": "hypre_amg",
-                                                                            "maximum_iterations": 200,
-                                                                            "absolute_tolerance": 1e-8,
-                                                                            "relative_tolerance": 1e-4, # 1e-4 seems to work
-                                                                            "solution_tolerance": 1e-4, # 1e-4 seems to work
-                                                                            "report": True,
-                                                                            "error_on_nonconvergence": False
-                                                                            }
-                                                                            }
-
     def prefix(self):
         gp = self.parameters["two_dimensional_geometry"]
         return self.modelname + "_" + gp["meshtype"] + "_" + "problem"
@@ -496,35 +432,51 @@ class NotchedCrack(TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightCh
         geofile = \
             """
             Mesh.Algorithm = 8;
+            notch_fine_mesh_layer_level_num = DefineNumber[ %g, Name "Parameters/notch_fine_mesh_layer_level_num" ];
+            fine_mesh_elem_size = DefineNumber[ %g, Name "Parameters/fine_mesh_elem_size" ];
             coarse_mesh_elem_size = DefineNumber[ %g, Name "Parameters/coarse_mesh_elem_size" ];
             x_notch_point = DefineNumber[ %g, Name "Parameters/x_notch_point" ];
             r_notch = DefineNumber[ %g, Name "Parameters/r_notch" ];
             L = DefineNumber[ %g, Name "Parameters/L"];
             H = DefineNumber[ %g, Name "Parameters/H"];
-            Point(1) = {0, 0, 0, coarse_mesh_elem_size};
-            Point(2) = {x_notch_point-r_notch, 0, 0, coarse_mesh_elem_size};
-            Point(3) = {0, -r_notch, 0, coarse_mesh_elem_size};
-            Point(4) = {0, -H/2, 0, coarse_mesh_elem_size};
-            Point(5) = {L, -H/2, 0, coarse_mesh_elem_size};
-            Point(6) = {L, H/2, 0, coarse_mesh_elem_size};
-            Point(7) = {0, H/2, 0, coarse_mesh_elem_size};
-            Point(8) = {0, r_notch, 0, coarse_mesh_elem_size};
-            Point(9) = {x_notch_point-r_notch, r_notch, 0, coarse_mesh_elem_size};
-            Point(10) = {x_notch_point, 0, 0, coarse_mesh_elem_size};
-            Point(11) = {x_notch_point-r_notch, -r_notch, 0, coarse_mesh_elem_size};
-            Line(1) = {11, 3};
+            Point(1) = {0, 0, 0, fine_mesh_elem_size};
+            Point(2) = {x_notch_point-r_notch, 0, 0, fine_mesh_elem_size};
+            Point(3) = {0, -r_notch, 0, fine_mesh_elem_size};
+            Point(4) = {0, -r_notch-notch_fine_mesh_layer_level_num*fine_mesh_elem_size, 0, fine_mesh_elem_size};
+            Point(5) = {0, -H/2, 0, coarse_mesh_elem_size};
+            Point(6) = {L, -H/2, 0, coarse_mesh_elem_size};
+            Point(7) = {L, -r_notch-notch_fine_mesh_layer_level_num*fine_mesh_elem_size, 0, fine_mesh_elem_size};
+            Point(8) = {L, r_notch+notch_fine_mesh_layer_level_num*fine_mesh_elem_size, 0, fine_mesh_elem_size};
+            Point(9) = {L, H/2, 0, coarse_mesh_elem_size};
+            Point(10) = {0, H/2, 0, coarse_mesh_elem_size};
+            Point(11) = {0, r_notch+notch_fine_mesh_layer_level_num*fine_mesh_elem_size, 0, fine_mesh_elem_size};
+            Point(12) = {0, r_notch, 0, fine_mesh_elem_size};
+            Point(13) = {x_notch_point-r_notch, r_notch, 0, fine_mesh_elem_size};
+            Point(14) = {x_notch_point, 0, 0, fine_mesh_elem_size};
+            Point(15) = {x_notch_point-r_notch, -r_notch, 0, fine_mesh_elem_size};
+            Line(1) = {15, 3};
             Line(2) = {3, 4};
-            Line(3) = {4, 5};
-            Line(4) = {5, 6};
-            Line(5) = {6, 7};
-            Line(6) = {7, 8};
-            Line(7) = {8, 9};
-            Circle(8) = {9, 2, 10};
-            Circle(9) = {10, 2, 11};
-            Curve Loop(21) = {1, 2, 3, 4, 5, 6, 7, 8, 9};
+            Line(3) = {4, 7};
+            Line(4) = {4, 5};
+            Line(5) = {5, 6};
+            Line(6) = {6, 7};
+            Line(7) = {7, 8};
+            Line(8) = {8, 9};
+            Line(9) = {9, 10};
+            Line(10) = {10, 11};
+            Line(11) = {11, 8};
+            Line(12) = {11, 12};
+            Line(13) = {12, 13};
+            Circle(14) = {13, 2, 14};
+            Circle(15) = {14, 2, 15};
+            Curve Loop(21) = {1, 2, 3, 7, -11, 12, 13, 14, 15};
+            Curve Loop(22) = {8, 9, 10, 11};
+            Curve Loop(23) = {6, -3, 4, 5};
             Plane Surface(31) = {21};
+            Plane Surface(32) = {22};
+            Plane Surface(33) = {23};
             Mesh.MshFileVersion = 2.0;
-            """ % (self.coarse_mesh_elem_size, self.x_notch_point, self.r_notch, self.L, self.H)
+            """ % (self.notch_fine_mesh_layer_level_num, self.fine_mesh_elem_size, self.coarse_mesh_elem_size, self.x_notch_point, self.r_notch, self.L, self.H)
         
         geofile = textwrap.dedent(geofile)
 
@@ -532,6 +484,8 @@ class NotchedCrack(TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightCh
         H_string           = "{:.1f}".format(self.H)
         x_notch_point_string = "{:.1f}".format(self.x_notch_point)
         r_notch_string     = "{:.1f}".format(self.r_notch)
+        notch_fine_mesh_layer_level_num_string = "{:d}".format(self.notch_fine_mesh_layer_level_num)
+        fine_mesh_elem_size_string = "{:.3f}".format(self.fine_mesh_elem_size)
         coarse_mesh_elem_size_string  = "{:.1f}".format(self.coarse_mesh_elem_size)
 
         mp = self.parameters["material"]
@@ -544,11 +498,13 @@ class NotchedCrack(TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightCh
             + "_" + H_string
             + "_" + x_notch_point_string
             + "_" + r_notch_string
+            + "_" + notch_fine_mesh_layer_level_num_string
+            + "_" + fine_mesh_elem_size_string
             + "_" + coarse_mesh_elem_size_string
         )
         
         return gmsh_mesher(geofile, self.prefix(), meshname)
-    
+
     def define_bc_u(self):
         """
         Return a list of boundary conditions on the displacement
@@ -595,56 +551,6 @@ class NotchedCrack(TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightCh
         bc_I = DirichletBC(self.V_u.sub(1), Constant(0.), BottomBoundary())
         bc_II = DirichletBC(self.V_u.sub(0), Constant(0.), RightBoundary())
         bc_III  = DirichletBC(self.V_u.sub(1), self.u_y_expression, TopBoundary())
-
-        return [bc_I, bc_II, bc_III]
-    
-    def define_bc_monolithic(self):
-        """
-        Return a list of boundary conditions for the monolithic solution
-        scheme
-        """
-        self.lines = MeshFunction("size_t", self.mesh, self.mesh.topology().dim()-1)
-        self.lines.set_all(0)
-
-        L = self.L
-        H = self.H
-        x_notch_point = self.x_notch_point
-        r_notch = self.r_notch
-
-        class LeftBoundary(SubDomain):
-            def inside(self, x, on_boundary):
-                return near(x[0], 0., DOLFIN_EPS)
-        
-        class RightBoundary(SubDomain):
-            def inside(self, x, on_boundary):
-                return near(x[0], L, DOLFIN_EPS)
-
-        class BottomBoundary(SubDomain):
-            def inside(self, x, on_boundary):
-                return near(x[1], -H/2., DOLFIN_EPS)
-        
-        class TopBoundary(SubDomain):
-            def inside(self, x, on_boundary):
-                return near(x[1], H/2., DOLFIN_EPS)
-
-        class Notch(SubDomain):
-            def inside(self, x, on_boundary):
-                r_notch_sq = (x[0]-(x_notch_point-r_notch))**2 + x[1]**2
-                return r_notch_sq <= (r_notch + DOLFIN_EPS)**2
-
-        LeftBoundary().mark(self.lines, 1)
-        RightBoundary().mark(self.lines, 2)
-        BottomBoundary().mark(self.lines, 3)
-        TopBoundary().mark(self.lines, 4)
-        Notch().mark(self.lines, 5)
-
-        mesh_topologier(self.lines, self.prefix(), "lines")
-
-        self.u_y_expression = Expression("u_y", u_y=0., degree=0)
-
-        bc_I = DirichletBC(self.V.sub(0).sub(1), Constant(0.), BottomBoundary())
-        bc_II = DirichletBC(self.V.sub(0).sub(0), Constant(0.), RightBoundary())
-        bc_III  = DirichletBC(self.V.sub(0).sub(1), self.u_y_expression, TopBoundary())
 
         return [bc_I, bc_II, bc_III]
     
@@ -744,12 +650,12 @@ class NotchedCrack(TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightCh
         self.F_22_chunks_val = [0. for meshpoint_indx in range(self.meshpoint_num)]
     
     def set_sigma_chunks(self):
-        self.sigma_22_chunks     = []
-        self.sigma_22_chunks_val = [0. for meshpoint_indx in range(self.meshpoint_num)]
-        self.sigma_22_penalty_term_chunks     = []
-        self.sigma_22_penalty_term_chunks_val = [0. for meshpoint_indx in range(self.meshpoint_num)]
-        self.sigma_22_less_penalty_term_chunks     = []
-        self.sigma_22_less_penalty_term_chunks_val = [0. for meshpoint_indx in range(self.meshpoint_num)]
+        self.sigma_mm_22_chunks     = []
+        self.sigma_mm_22_chunks_val = [0. for meshpoint_indx in range(self.meshpoint_num)]
+        self.sigma_nl_22_chunks     = []
+        self.sigma_nl_22_chunks_val = [0. for meshpoint_indx in range(self.meshpoint_num)]
+        self.sigma_nc_22_chunks     = []
+        self.sigma_nc_22_chunks_val = [0. for meshpoint_indx in range(self.meshpoint_num)]
     
     def set_loading(self):
         """
@@ -775,23 +681,23 @@ class NotchedCrack(TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightCh
         self.F_22_chunks.append(deepcopy(self.F_22_chunks_val))
     
     def sigma_chunks_post_processing(self):
-        sigma_val = self.cauchy_stress_ufl_fenics_mesh_func()
-        sigma_penalty_term_val = self.cauchy_stress_penalty_term_ufl_fenics_mesh_func()
-        sigma_less_penalty_term_val = sigma_val - sigma_penalty_term_val
-        sigma_val = project(sigma_val, self.V_DG_tensor)
-        sigma_penalty_term_val = project(sigma_penalty_term_val, self.V_DG_tensor)
-        sigma_less_penalty_term_val = project(sigma_less_penalty_term_val, self.V_DG_tensor)
+        sigma_mm_val = self.cauchy_stress_mm_ufl_fenics_mesh_func()
+        sigma_nl_val = self.cauchy_stress_nl_ufl_fenics_mesh_func()
+        sigma_nc_val = self.cauchy_stress_nc_ufl_fenics_mesh_func()
+        sigma_mm_val = project(sigma_mm_val, self.V_DG_tensor)
+        sigma_nl_val = project(sigma_nl_val, self.V_DG_tensor)
+        sigma_nc_val = project(sigma_nc_val, self.V_DG_tensor)
         for meshpoint_indx in range(self.meshpoint_num):
             MPI.barrier(MPI.comm_world)
-            sigma_chunks_val = peval(sigma_val, self.meshpoints_list[meshpoint_indx])
-            sigma_penalty_term_chunks_val = peval(sigma_penalty_term_val, self.meshpoints_list[meshpoint_indx])
-            sigma_less_penalty_term_chunks_val = peval(sigma_less_penalty_term_val, self.meshpoints_list[meshpoint_indx])
-            self.sigma_22_chunks_val[meshpoint_indx] = sigma_chunks_val[self.two_dim_tensor2voigt_vector_indx_dict["22"]]
-            self.sigma_22_penalty_term_chunks_val[meshpoint_indx] = sigma_penalty_term_chunks_val[self.two_dim_tensor2voigt_vector_indx_dict["22"]]
-            self.sigma_22_less_penalty_term_chunks_val[meshpoint_indx] = sigma_less_penalty_term_chunks_val[self.two_dim_tensor2voigt_vector_indx_dict["22"]]
-        self.sigma_22_chunks.append(deepcopy(self.sigma_22_chunks_val))
-        self.sigma_22_penalty_term_chunks.append(deepcopy(self.sigma_22_penalty_term_chunks_val))
-        self.sigma_22_less_penalty_term_chunks.append(deepcopy(self.sigma_22_less_penalty_term_chunks_val))
+            sigma_mm_chunks_val = peval(sigma_mm_val, self.meshpoints_list[meshpoint_indx])
+            sigma_nl_chunks_val = peval(sigma_nl_val, self.meshpoints_list[meshpoint_indx])
+            sigma_nc_chunks_val = peval(sigma_nc_val, self.meshpoints_list[meshpoint_indx])
+            self.sigma_mm_22_chunks_val[meshpoint_indx] = sigma_mm_chunks_val[self.two_dim_tensor2voigt_vector_indx_dict["22"]]
+            self.sigma_nl_22_chunks_val[meshpoint_indx] = sigma_nl_chunks_val[self.two_dim_tensor2voigt_vector_indx_dict["22"]]
+            self.sigma_nc_22_chunks_val[meshpoint_indx] = sigma_nc_chunks_val[self.two_dim_tensor2voigt_vector_indx_dict["22"]]
+        self.sigma_mm_22_chunks.append(deepcopy(self.sigma_mm_22_chunks_val))
+        self.sigma_nl_22_chunks.append(deepcopy(self.sigma_nl_22_chunks_val))
+        self.sigma_nc_22_chunks.append(deepcopy(self.sigma_nc_22_chunks_val))
 
     def finalization(self):
         """
@@ -928,68 +834,6 @@ class NotchedCrack(TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightCh
                 plt.legend(loc='best')
                 plt.grid(True, alpha=0.25)
                 save_current_figure(self.savedir, r'$u_y$', 30, r'$\tilde{\lambda}_{\nu}$', 30, "u_y-vs-lmbda_nu_tilde"+"_"+self.meshpoints_name_list[meshpoint_indx])
-        
-        # lmbda_c_tilde_max
-        if ppp["save_lmbda_c_tilde_max_chunks"] and self.comm_rank == 0:
-            fig = plt.figure()
-            for meshpoint_indx in range(self.meshpoint_num):
-                lmbda_c_tilde_max___meshpoint_chunk = [lmbda_c_tilde_max_chunk[meshpoint_indx] for lmbda_c_tilde_max_chunk in self.lmbda_c_tilde_max_chunks]
-                plt.plot(self.t_chunks, lmbda_c_tilde_max___meshpoint_chunk, linestyle='-', color=self.meshpoints_color_list[meshpoint_indx], alpha=1, linewidth=2.5, label=self.meshpoints_label_list[meshpoint_indx])
-            plt.legend(loc='best')
-            plt.grid(True, alpha=0.25)
-            save_current_figure(self.savedir, r'$t$', 30, r'$\tilde{\lambda}_c^{max}$', 30, "t-vs-lmbda_c_tilde_max")
-
-            fig = plt.figure()
-            for meshpoint_indx in range(self.meshpoint_num):
-                lmbda_c_tilde_max___meshpoint_chunk = [lmbda_c_tilde_max_chunk[meshpoint_indx] for lmbda_c_tilde_max_chunk in self.lmbda_c_tilde_max_chunks]
-                plt.plot(self.u_y_chunks, lmbda_c_tilde_max___meshpoint_chunk, linestyle='-', color=self.meshpoints_color_list[meshpoint_indx], alpha=1, linewidth=2.5, label=self.meshpoints_label_list[meshpoint_indx])
-            plt.legend(loc='best')
-            plt.grid(True, alpha=0.25)
-            save_current_figure(self.savedir, r'$u_y$', 30, r'$\tilde{\lambda}_c^{max}$', 30, "u_y-vs-lmbda_c_tilde_max")
-
-        # lmbda_c_eq_tilde_max
-        if ppp["save_lmbda_c_eq_tilde_max_chunks"] and self.comm_rank == 0:
-            for meshpoint_indx in range(self.meshpoint_num):
-                fig = plt.figure()
-                lmbda_c_eq_tilde_max___meshpoint_chunk = [lmbda_c_eq_tilde_max_chunk[meshpoint_indx] for lmbda_c_eq_tilde_max_chunk in self.lmbda_c_eq_tilde_max_chunks]
-                for nu_chunk_indx in range(self.nu_chunks_num):
-                    lmbda_c_eq_tilde_max___nu_chunk = [lmbda_c_eq_tilde_max_chunk[nu_chunk_indx] for lmbda_c_eq_tilde_max_chunk in lmbda_c_eq_tilde_max___meshpoint_chunk]
-                    plt.plot(self.t_chunks, lmbda_c_eq_tilde_max___nu_chunk, linestyle='-', color=self.nu_chunks_color_list[nu_chunk_indx], alpha=1, linewidth=2.5, label=self.nu_chunks_label_list[nu_chunk_indx])
-                plt.legend(loc='best')
-                plt.grid(True, alpha=0.25)
-                save_current_figure(self.savedir, r'$t$', 30, r'$(\tilde{\lambda}_c^{eq})^{max}$', 30, "t-vs-lmbda_c_eq_tilde_max"+"_"+self.meshpoints_name_list[meshpoint_indx])
-            
-            for meshpoint_indx in range(self.meshpoint_num):
-                fig = plt.figure()
-                lmbda_c_eq_tilde_max___meshpoint_chunk = [lmbda_c_eq_tilde_max_chunk[meshpoint_indx] for lmbda_c_eq_tilde_max_chunk in self.lmbda_c_eq_tilde_max_chunks]
-                for nu_chunk_indx in range(self.nu_chunks_num):
-                    lmbda_c_eq_tilde_max___nu_chunk = [lmbda_c_eq_tilde_max_chunk[nu_chunk_indx] for lmbda_c_eq_tilde_max_chunk in lmbda_c_eq_tilde_max___meshpoint_chunk]
-                    plt.plot(self.u_y_chunks, lmbda_c_eq_tilde_max___nu_chunk, linestyle='-', color=self.nu_chunks_color_list[nu_chunk_indx], alpha=1, linewidth=2.5, label=self.nu_chunks_label_list[nu_chunk_indx])
-                plt.legend(loc='best')
-                plt.grid(True, alpha=0.25)
-                save_current_figure(self.savedir, r'$u_y$', 30, r'$(\tilde{\lambda}_c^{eq})^{max}$', 30, "u_y-vs-lmbda_c_eq_tilde_max"+"_"+self.meshpoints_name_list[meshpoint_indx])
-        
-        # lmbda_nu_tilde_max
-        if ppp["save_lmbda_nu_tilde_max_chunks"] and self.comm_rank == 0:
-            for meshpoint_indx in range(self.meshpoint_num):
-                fig = plt.figure()
-                lmbda_nu_tilde_max___meshpoint_chunk = [lmbda_nu_tilde_max_chunk[meshpoint_indx] for lmbda_nu_tilde_max_chunk in self.lmbda_nu_tilde_max_chunks]
-                for nu_chunk_indx in range(self.nu_chunks_num):
-                    lmbda_nu_tilde_max___nu_chunk = [lmbda_nu_tilde_max_chunk[nu_chunk_indx] for lmbda_nu_tilde_max_chunk in lmbda_nu_tilde_max___meshpoint_chunk]
-                    plt.plot(self.t_chunks, lmbda_nu_tilde_max___nu_chunk, linestyle='-', color=self.nu_chunks_color_list[nu_chunk_indx], alpha=1, linewidth=2.5, label=self.nu_chunks_label_list[nu_chunk_indx])
-                plt.legend(loc='best')
-                plt.grid(True, alpha=0.25)
-                save_current_figure(self.savedir, r'$t$', 30, r'$\tilde{\lambda}_{\nu}^{max}$', 30, "t-vs-lmbda_nu_tilde_max"+"_"+self.meshpoints_name_list[meshpoint_indx])
-            
-            for meshpoint_indx in range(self.meshpoint_num):
-                fig = plt.figure()
-                lmbda_nu_tilde_max___meshpoint_chunk = [lmbda_nu_tilde_max_chunk[meshpoint_indx] for lmbda_nu_tilde_max_chunk in self.lmbda_nu_tilde_max_chunks]
-                for nu_chunk_indx in range(self.nu_chunks_num):
-                    lmbda_nu_tilde_max___nu_chunk = [lmbda_nu_tilde_max_chunk[nu_chunk_indx] for lmbda_nu_tilde_max_chunk in lmbda_nu_tilde_max___meshpoint_chunk]
-                    plt.plot(self.u_y_chunks, lmbda_nu_tilde_max___nu_chunk, linestyle='-', color=self.nu_chunks_color_list[nu_chunk_indx], alpha=1, linewidth=2.5, label=self.nu_chunks_label_list[nu_chunk_indx])
-                plt.legend(loc='best')
-                plt.grid(True, alpha=0.25)
-                save_current_figure(self.savedir, r'$u_y$', 30, r'$\tilde{\lambda}_{\nu}^{max}$', 30, "u_y-vs-lmbda_nu_tilde_max"+"_"+self.meshpoints_name_list[meshpoint_indx])
         
         # g
         if ppp["save_g_chunks"] and self.comm_rank == 0:
@@ -1209,7 +1053,6 @@ class NotchedCrack(TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightCh
             plt.grid(True, alpha=0.25)
             save_current_figure(self.savedir, r'$u_y$', 30, r'$\overline{\hat{E}_{c\nu}^{diss}}$', 30, "u_y-vs-overline_Epsilon_cnu_diss_hat")
         
-
         # overline_epsilon_c_diss_hat
         if ppp["save_overline_epsilon_c_diss_hat_chunks"] and self.comm_rank == 0:
             for meshpoint_indx in range(self.meshpoint_num):
@@ -1306,51 +1149,51 @@ class NotchedCrack(TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightCh
         if ppp["save_sigma_chunks"] and self.comm_rank == 0:
             fig = plt.figure()
             for meshpoint_indx in range(self.meshpoint_num):
-                sigma_22___meshpoint_chunk = [sigma_22_chunk[meshpoint_indx] for sigma_22_chunk in self.sigma_22_chunks]
-                plt.plot(self.t_chunks, sigma_22___meshpoint_chunk, linestyle='-', color=self.meshpoints_color_list[meshpoint_indx], alpha=1, linewidth=2.5, label=self.meshpoints_label_list[meshpoint_indx])
+                sigma_mm_22___meshpoint_chunk = [sigma_mm_22_chunk[meshpoint_indx] for sigma_mm_22_chunk in self.sigma_mm_22_chunks]
+                plt.plot(self.t_chunks, sigma_mm_22___meshpoint_chunk, linestyle='-', color=self.meshpoints_color_list[meshpoint_indx], alpha=1, linewidth=2.5, label=self.meshpoints_label_list[meshpoint_indx])
             plt.legend(loc='best')
             plt.grid(True, alpha=0.25)
-            save_current_figure(self.savedir, r'$t$', 30, r'$\sigma_{22}$', 30, "t-vs-sigma_22")
+            save_current_figure(self.savedir, r'$t$', 30, r'$(\sigma_{mm})_{22}$', 30, "t-vs-sigma_mm_22")
 
             fig = plt.figure()
             for meshpoint_indx in range(self.meshpoint_num):
-                sigma_22___meshpoint_chunk = [sigma_22_chunk[meshpoint_indx] for sigma_22_chunk in self.sigma_22_chunks]
-                plt.plot(self.u_y_chunks, sigma_22___meshpoint_chunk, linestyle='-', color=self.meshpoints_color_list[meshpoint_indx], alpha=1, linewidth=2.5, label=self.meshpoints_label_list[meshpoint_indx])
+                sigma_mm_22___meshpoint_chunk = [sigma_mm_22_chunk[meshpoint_indx] for sigma_mm_22_chunk in self.sigma_mm_22_chunks]
+                plt.plot(self.u_y_chunks, sigma_mm_22___meshpoint_chunk, linestyle='-', color=self.meshpoints_color_list[meshpoint_indx], alpha=1, linewidth=2.5, label=self.meshpoints_label_list[meshpoint_indx])
             plt.legend(loc='best')
             plt.grid(True, alpha=0.25)
-            save_current_figure(self.savedir, r'$u_y$', 30, r'$\sigma_{22}$', 30, "u_y-vs-sigma_22")
+            save_current_figure(self.savedir, r'$u_y$', 30, r'$(\sigma_{mm})_{22}$', 30, "u_y-vs-sigma_mm_22")
 
             fig = plt.figure()
             for meshpoint_indx in range(self.meshpoint_num):
-                sigma_22_penalty_term___meshpoint_chunk = [sigma_22_penalty_term_chunk[meshpoint_indx] for sigma_22_penalty_term_chunk in self.sigma_22_penalty_term_chunks]
-                plt.plot(self.t_chunks, sigma_22_penalty_term___meshpoint_chunk, linestyle='-', color=self.meshpoints_color_list[meshpoint_indx], alpha=1, linewidth=2.5, label=self.meshpoints_label_list[meshpoint_indx])
+                sigma_nl_22___meshpoint_chunk = [sigma_nl_22_chunk[meshpoint_indx] for sigma_nl_22_chunk in self.sigma_nl_22_chunks]
+                plt.plot(self.t_chunks, sigma_nl_22___meshpoint_chunk, linestyle='-', color=self.meshpoints_color_list[meshpoint_indx], alpha=1, linewidth=2.5, label=self.meshpoints_label_list[meshpoint_indx])
             plt.legend(loc='best')
             plt.grid(True, alpha=0.25)
-            save_current_figure(self.savedir, r'$t$', 30, r'$(\sigma_{22})_{penalty}$', 30, "t-vs-sigma_22_penalty_term")
+            save_current_figure(self.savedir, r'$t$', 30, r'$(\sigma_{nl})_{22}$', 30, "t-vs-sigma_nl_22")
 
             fig = plt.figure()
             for meshpoint_indx in range(self.meshpoint_num):
-                sigma_22_penalty_term___meshpoint_chunk = [sigma_22_penalty_term_chunk[meshpoint_indx] for sigma_22_penalty_term_chunk in self.sigma_22_penalty_term_chunks]
-                plt.plot(self.u_y_chunks, sigma_22_penalty_term___meshpoint_chunk, linestyle='-', color=self.meshpoints_color_list[meshpoint_indx], alpha=1, linewidth=2.5, label=self.meshpoints_label_list[meshpoint_indx])
+                sigma_nl_22___meshpoint_chunk = [sigma_nl_22_chunk[meshpoint_indx] for sigma_nl_22_chunk in self.sigma_nl_22_chunks]
+                plt.plot(self.u_y_chunks, sigma_nl_22___meshpoint_chunk, linestyle='-', color=self.meshpoints_color_list[meshpoint_indx], alpha=1, linewidth=2.5, label=self.meshpoints_label_list[meshpoint_indx])
             plt.legend(loc='best')
             plt.grid(True, alpha=0.25)
-            save_current_figure(self.savedir, r'$u_y$', 30, r'$(\sigma_{22})_{penalty}$', 30, "u_y-vs-sigma_22_penalty_term")
+            save_current_figure(self.savedir, r'$u_y$', 30, r'$(\sigma_{nl})_{22}$', 30, "u_y-vs-sigma_nl_22")
 
             fig = plt.figure()
             for meshpoint_indx in range(self.meshpoint_num):
-                sigma_22_less_penalty_term___meshpoint_chunk = [sigma_22_less_penalty_term_chunk[meshpoint_indx] for sigma_22_less_penalty_term_chunk in self.sigma_22_less_penalty_term_chunks]
-                plt.plot(self.t_chunks, sigma_22_less_penalty_term___meshpoint_chunk, linestyle='-', color=self.meshpoints_color_list[meshpoint_indx], alpha=1, linewidth=2.5, label=self.meshpoints_label_list[meshpoint_indx])
+                sigma_nc_22___meshpoint_chunk = [sigma_nc_22_chunk[meshpoint_indx] for sigma_nc_22_chunk in self.sigma_nc_22_chunks]
+                plt.plot(self.t_chunks, sigma_nc_22___meshpoint_chunk, linestyle='-', color=self.meshpoints_color_list[meshpoint_indx], alpha=1, linewidth=2.5, label=self.meshpoints_label_list[meshpoint_indx])
             plt.legend(loc='best')
             plt.grid(True, alpha=0.25)
-            save_current_figure(self.savedir, r'$t$', 30, r'$\sigma_{22} - (\sigma_{22})_{penalty}$', 30, "t-vs-sigma_22_less_penalty_term")
+            save_current_figure(self.savedir, r'$t$', 30, r'$(\sigma_{nc})_{22}$', 30, "t-vs-sigma_nc_22")
 
             fig = plt.figure()
             for meshpoint_indx in range(self.meshpoint_num):
-                sigma_22_less_penalty_term___meshpoint_chunk = [sigma_22_less_penalty_term_chunk[meshpoint_indx] for sigma_22_less_penalty_term_chunk in self.sigma_22_less_penalty_term_chunks]
-                plt.plot(self.u_y_chunks, sigma_22_less_penalty_term___meshpoint_chunk, linestyle='-', color=self.meshpoints_color_list[meshpoint_indx], alpha=1, linewidth=2.5, label=self.meshpoints_label_list[meshpoint_indx])
+                sigma_nc_22___meshpoint_chunk = [sigma_nc_22_chunk[meshpoint_indx] for sigma_nc_22_chunk in self.sigma_nc_22_chunks]
+                plt.plot(self.u_y_chunks, sigma_nc_22___meshpoint_chunk, linestyle='-', color=self.meshpoints_color_list[meshpoint_indx], alpha=1, linewidth=2.5, label=self.meshpoints_label_list[meshpoint_indx])
             plt.legend(loc='best')
             plt.grid(True, alpha=0.25)
-            save_current_figure(self.savedir, r'$u_y$', 30, r'$\sigma_{22} - (\sigma_{22})_{penalty}$', 30, "u_y-vs-sigma_22_less_penalty_term")
+            save_current_figure(self.savedir, r'$u_y$', 30, r'$(\sigma_{nc})_{22}$', 30, "u_y-vs-sigma_nc_22")
 
 
 if __name__ == '__main__':
@@ -1361,7 +1204,7 @@ if __name__ == '__main__':
     notch_fine_mesh_layer_level_num = 1
     fine_mesh_elem_size = 0.002 # 0.01
     coarse_mesh_elem_size = 0.1 # 0.01 # 0.25
-    l_nl = 0.01 # coarse_mesh_elem_size # coarse_mesh_elem_size # 10*r_notch # 1.25*r_notch # 0.02 = 2*coarse_mesh_elem_size
-    problem = NotchedCrack(L, H, x_notch_point, r_notch, notch_fine_mesh_layer_level_num, fine_mesh_elem_size, coarse_mesh_elem_size, l_nl)
+    l_nl = 0.02 # 0.01 # coarse_mesh_elem_size # coarse_mesh_elem_size # 10*r_notch # 1.25*r_notch # 0.02 = 2*coarse_mesh_elem_size
+    problem = RefinedNotchedCrack(L, H, x_notch_point, r_notch, notch_fine_mesh_layer_level_num, fine_mesh_elem_size, coarse_mesh_elem_size, l_nl)
     problem.solve()
     problem.finalization()

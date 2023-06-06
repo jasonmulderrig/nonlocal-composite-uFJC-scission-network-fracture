@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 from copy import deepcopy
 import textwrap
 
-class NotchedCrack(TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqualStrainRateIndependentCompositeuFJCNetworkNonlocalScissionNetworkFractureProblem):
+class RefinedNotchedCrack(TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqualStrainRateIndependentCompositeuFJCNetworkNonlocalScissionNetworkFractureProblem):
 
     def __init__(self, L, H, x_notch_point, r_notch, notch_fine_mesh_layer_level_num=2, fine_mesh_elem_size=0.001, coarse_mesh_elem_size=0.1, l_nl=0.1):
 
@@ -67,7 +67,7 @@ class NotchedCrack(TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightCh
             ugp.add("meshpoint_indx_"+str(meshpoint_indx)+"_name", meshpoints_name_list[meshpoint_indx])
         
         ugp.add("meshpoint_num", meshpoints_num)
-        ugp.add("meshtype", "notched_crack")
+        ugp.add("meshtype", "refined_notched_crack")
         
         gp.assign(ugp)
         
@@ -118,7 +118,7 @@ class NotchedCrack(TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightCh
 
         # Network-level damage
         d_c_lmbda_nu_crit_min = 1.001 # 1.001
-        d_c_lmbda_nu_crit_max = 1.005 # 1.005
+        d_c_lmbda_nu_crit_max = 1.2 # 1.005 # 1.005
 
         ump.add("d_c_lmbda_nu_crit_min", d_c_lmbda_nu_crit_min)
         ump.add("d_c_lmbda_nu_crit_max", d_c_lmbda_nu_crit_max)
@@ -197,11 +197,11 @@ class NotchedCrack(TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightCh
         dp["deformation_type"] = "uniaxial"
 
         dp["K__G"] = 10
-        dp["k_cond_val"] = 1.e-2 # 1.e-4
+        dp["k_cond_val"] = 1.e-3 # 1.e-4
         dp["tol_lmbda_c_tilde_val"] = 1e-3
 
         dp["strain_rate"] = 0.1 # 0.2 # 1/sec
-        dp["t_max"] = 8.32 # 6.2 # 5.8 # 4.4 # 30.0 # 33.0 # 30.0 # 13.6 # 13.5 # 16.0 # 100.0 # sec
+        dp["t_max"] = 40.0 # 6.2 # 5.8 # 4.4 # 30.0 # 33.0 # 30.0 # 13.6 # 13.5 # 16.0 # 100.0 # sec
         dp["t_step"] = 0.02 # 0.005 # 0.01 # 0.02 # sec
         dp["t_step_chunk_num"] = 2
 
@@ -496,35 +496,51 @@ class NotchedCrack(TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightCh
         geofile = \
             """
             Mesh.Algorithm = 8;
+            notch_fine_mesh_layer_level_num = DefineNumber[ %g, Name "Parameters/notch_fine_mesh_layer_level_num" ];
+            fine_mesh_elem_size = DefineNumber[ %g, Name "Parameters/fine_mesh_elem_size" ];
             coarse_mesh_elem_size = DefineNumber[ %g, Name "Parameters/coarse_mesh_elem_size" ];
             x_notch_point = DefineNumber[ %g, Name "Parameters/x_notch_point" ];
             r_notch = DefineNumber[ %g, Name "Parameters/r_notch" ];
             L = DefineNumber[ %g, Name "Parameters/L"];
             H = DefineNumber[ %g, Name "Parameters/H"];
-            Point(1) = {0, 0, 0, coarse_mesh_elem_size};
-            Point(2) = {x_notch_point-r_notch, 0, 0, coarse_mesh_elem_size};
-            Point(3) = {0, -r_notch, 0, coarse_mesh_elem_size};
-            Point(4) = {0, -H/2, 0, coarse_mesh_elem_size};
-            Point(5) = {L, -H/2, 0, coarse_mesh_elem_size};
-            Point(6) = {L, H/2, 0, coarse_mesh_elem_size};
-            Point(7) = {0, H/2, 0, coarse_mesh_elem_size};
-            Point(8) = {0, r_notch, 0, coarse_mesh_elem_size};
-            Point(9) = {x_notch_point-r_notch, r_notch, 0, coarse_mesh_elem_size};
-            Point(10) = {x_notch_point, 0, 0, coarse_mesh_elem_size};
-            Point(11) = {x_notch_point-r_notch, -r_notch, 0, coarse_mesh_elem_size};
-            Line(1) = {11, 3};
+            Point(1) = {0, 0, 0, fine_mesh_elem_size};
+            Point(2) = {x_notch_point-r_notch, 0, 0, fine_mesh_elem_size};
+            Point(3) = {0, -r_notch, 0, fine_mesh_elem_size};
+            Point(4) = {0, -r_notch-notch_fine_mesh_layer_level_num*fine_mesh_elem_size, 0, fine_mesh_elem_size};
+            Point(5) = {0, -H/2, 0, coarse_mesh_elem_size};
+            Point(6) = {L, -H/2, 0, coarse_mesh_elem_size};
+            Point(7) = {L, -r_notch-notch_fine_mesh_layer_level_num*fine_mesh_elem_size, 0, fine_mesh_elem_size};
+            Point(8) = {L, r_notch+notch_fine_mesh_layer_level_num*fine_mesh_elem_size, 0, fine_mesh_elem_size};
+            Point(9) = {L, H/2, 0, coarse_mesh_elem_size};
+            Point(10) = {0, H/2, 0, coarse_mesh_elem_size};
+            Point(11) = {0, r_notch+notch_fine_mesh_layer_level_num*fine_mesh_elem_size, 0, fine_mesh_elem_size};
+            Point(12) = {0, r_notch, 0, fine_mesh_elem_size};
+            Point(13) = {x_notch_point-r_notch, r_notch, 0, fine_mesh_elem_size};
+            Point(14) = {x_notch_point, 0, 0, fine_mesh_elem_size};
+            Point(15) = {x_notch_point-r_notch, -r_notch, 0, fine_mesh_elem_size};
+            Line(1) = {15, 3};
             Line(2) = {3, 4};
-            Line(3) = {4, 5};
-            Line(4) = {5, 6};
-            Line(5) = {6, 7};
-            Line(6) = {7, 8};
-            Line(7) = {8, 9};
-            Circle(8) = {9, 2, 10};
-            Circle(9) = {10, 2, 11};
-            Curve Loop(21) = {1, 2, 3, 4, 5, 6, 7, 8, 9};
+            Line(3) = {4, 7};
+            Line(4) = {4, 5};
+            Line(5) = {5, 6};
+            Line(6) = {6, 7};
+            Line(7) = {7, 8};
+            Line(8) = {8, 9};
+            Line(9) = {9, 10};
+            Line(10) = {10, 11};
+            Line(11) = {11, 8};
+            Line(12) = {11, 12};
+            Line(13) = {12, 13};
+            Circle(14) = {13, 2, 14};
+            Circle(15) = {14, 2, 15};
+            Curve Loop(21) = {1, 2, 3, 7, -11, 12, 13, 14, 15};
+            Curve Loop(22) = {8, 9, 10, 11};
+            Curve Loop(23) = {6, -3, 4, 5};
             Plane Surface(31) = {21};
+            Plane Surface(32) = {22};
+            Plane Surface(33) = {23};
             Mesh.MshFileVersion = 2.0;
-            """ % (self.coarse_mesh_elem_size, self.x_notch_point, self.r_notch, self.L, self.H)
+            """ % (self.notch_fine_mesh_layer_level_num, self.fine_mesh_elem_size, self.coarse_mesh_elem_size, self.x_notch_point, self.r_notch, self.L, self.H)
         
         geofile = textwrap.dedent(geofile)
 
@@ -532,6 +548,8 @@ class NotchedCrack(TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightCh
         H_string           = "{:.1f}".format(self.H)
         x_notch_point_string = "{:.1f}".format(self.x_notch_point)
         r_notch_string     = "{:.1f}".format(self.r_notch)
+        notch_fine_mesh_layer_level_num_string = "{:d}".format(self.notch_fine_mesh_layer_level_num)
+        fine_mesh_elem_size_string = "{:.3f}".format(self.fine_mesh_elem_size)
         coarse_mesh_elem_size_string  = "{:.1f}".format(self.coarse_mesh_elem_size)
 
         mp = self.parameters["material"]
@@ -544,11 +562,13 @@ class NotchedCrack(TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightCh
             + "_" + H_string
             + "_" + x_notch_point_string
             + "_" + r_notch_string
+            + "_" + notch_fine_mesh_layer_level_num_string
+            + "_" + fine_mesh_elem_size_string
             + "_" + coarse_mesh_elem_size_string
         )
         
         return gmsh_mesher(geofile, self.prefix(), meshname)
-    
+
     def define_bc_u(self):
         """
         Return a list of boundary conditions on the displacement
@@ -1361,7 +1381,7 @@ if __name__ == '__main__':
     notch_fine_mesh_layer_level_num = 1
     fine_mesh_elem_size = 0.002 # 0.01
     coarse_mesh_elem_size = 0.1 # 0.01 # 0.25
-    l_nl = 0.01 # coarse_mesh_elem_size # coarse_mesh_elem_size # 10*r_notch # 1.25*r_notch # 0.02 = 2*coarse_mesh_elem_size
-    problem = NotchedCrack(L, H, x_notch_point, r_notch, notch_fine_mesh_layer_level_num, fine_mesh_elem_size, coarse_mesh_elem_size, l_nl)
+    l_nl = 0.02 # 0.01 # coarse_mesh_elem_size # coarse_mesh_elem_size # 10*r_notch # 1.25*r_notch # 0.02 = 2*coarse_mesh_elem_size
+    problem = RefinedNotchedCrack(L, H, x_notch_point, r_notch, notch_fine_mesh_layer_level_num, fine_mesh_elem_size, coarse_mesh_elem_size, l_nl)
     problem.solve()
     problem.finalization()
