@@ -125,7 +125,7 @@ class CompositeuFJCNetwork(object):
         
         P_nu_sum = np.sum(P_nu_list)
         
-        # Extract fundamental chain composition parameters and chain 
+        # Extract fundamental chain composition parameters and chain
         # scission parameters
         nu_b = none_str2nonetype(mp["nu_b"])
         zeta_b_char = none_str2nonetype(mp["zeta_b_char"])

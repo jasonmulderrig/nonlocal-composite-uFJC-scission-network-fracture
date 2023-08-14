@@ -146,9 +146,6 @@ def default_material_parameters():
     material.add("d_c_lmbda_nu_crit_min", d_c_lmbda_nu_crit_min)
     material.add("d_c_lmbda_nu_crit_max", d_c_lmbda_nu_crit_max)
 
-    # Non-local coupling modulus
-    material.add("h_nl", 1e-9)
-
     # Non-local interaction length scale
     material.add("l_nl", 0.01)
 
@@ -194,9 +191,6 @@ def default_material_parameters():
     lmbda_c_crit_max = composite_ufjc_nu_max.lmbda_c_eq_crit / composite_ufjc_nu_max.A_nu
     material.add("lmbda_c_tilde_lb", 0.0)
     material.add("lmbda_c_tilde_ub", lmbda_c_crit_max)
-
-    lmbda_nu_crit_max = composite_ufjc_nu_max.lmbda_nu_crit
-    material.add("d_c_lmbda_nu_crit_max", lmbda_nu_crit_max)
     
     # Define various characteristics of the deformation for the network
     material.add("network_model", "statistical_mechanics_model")
@@ -218,6 +212,8 @@ def default_fem_parameters():
     
     fem = Parameters("fem")
 
+    fem.add("solver_algorithm", "monolithic") # "alternate_minimization"
+    fem.add("solver_bounded", False) # True
     fem.add("u_degree", 1)
     fem.add("scalar_prmtr_degree", 1)
     fem.add("quadrature_degree", 4)
@@ -285,6 +281,15 @@ def default_post_processing_parameters():
 
     post_processing.add("save_lmbda_nu_tilde_mesh", False)
     post_processing.add("save_lmbda_nu_tilde_chunks", False)
+
+    post_processing.add("save_lmbda_c_tilde_max_mesh", True)
+    post_processing.add("save_lmbda_c_tilde_max_chunks", True)
+
+    post_processing.add("save_lmbda_c_eq_tilde_max_mesh", False)
+    post_processing.add("save_lmbda_c_eq_tilde_max_chunks", False)
+
+    post_processing.add("save_lmbda_nu_tilde_max_mesh", False)
+    post_processing.add("save_lmbda_nu_tilde_max_chunks", False)
 
     post_processing.add("save_g_mesh", False)
     post_processing.add("save_g_chunks", False)

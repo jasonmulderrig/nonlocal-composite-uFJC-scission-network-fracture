@@ -197,11 +197,11 @@ class NotchedCrack(TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightCh
         dp["deformation_type"] = "uniaxial"
 
         dp["K__G"] = 10
-        dp["k_cond_val"] = 1.e-2 # 1.e-4
+        dp["k_cond_val"] = 1.e-4 # 1.e-4
         dp["tol_lmbda_c_tilde_val"] = 1e-3
 
         dp["strain_rate"] = 0.1 # 0.2 # 1/sec
-        dp["t_max"] = 8.32 # 6.2 # 5.8 # 4.4 # 30.0 # 33.0 # 30.0 # 13.6 # 13.5 # 16.0 # 100.0 # sec
+        dp["t_max"] = 3.36 # 5.28 # 6.44 # 8.32 # 6.2 # 5.8 # 4.4 # 30.0 # 33.0 # 30.0 # 13.6 # 13.5 # 16.0 # 100.0 # sec
         dp["t_step"] = 0.02 # 0.005 # 0.01 # 0.02 # sec
         dp["t_step_chunk_num"] = 2
 
@@ -1359,9 +1359,9 @@ if __name__ == '__main__':
     x_notch_point = 0.5
     r_notch = 0.02
     notch_fine_mesh_layer_level_num = 1
-    fine_mesh_elem_size = 0.002 # 0.01
-    coarse_mesh_elem_size = 0.1 # 0.01 # 0.25
-    l_nl = 0.01 # coarse_mesh_elem_size # coarse_mesh_elem_size # 10*r_notch # 1.25*r_notch # 0.02 = 2*coarse_mesh_elem_size
+    fine_mesh_elem_size = 0.01 # 0.002
+    coarse_mesh_elem_size = 0.01 # 0.25 # 0.1
+    l_nl = coarse_mesh_elem_size # coarse_mesh_elem_size # 10*r_notch # 1.25*r_notch # 0.02 = 2*coarse_mesh_elem_size
     problem = NotchedCrack(L, H, x_notch_point, r_notch, notch_fine_mesh_layer_level_num, fine_mesh_elem_size, coarse_mesh_elem_size, l_nl)
     problem.solve()
     problem.finalization()

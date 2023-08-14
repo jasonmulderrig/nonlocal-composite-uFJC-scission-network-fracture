@@ -7,43 +7,12 @@ from .utility import (
     generate_savedir,
     print0,
     peval,
-    local_project
+    local_project,
+    max_ufl_fenics_mesh_func
 )
 import sys
+import numpy as np
 from copy import deepcopy
-
-class NonLocalChainStretchProblem(OptimisationProblem):
-    """
-    Variational problem class used to solve for non-local chain stretch,
-    which is the functional argument for non-local scission in the
-    composite uFJC network leading to macroscopic fracture. This class
-    depends on the OptimisationProblem class, allowing for the use of
-    the variational inequality solvers of PETScTAO.
-    """
-    def __init__(self, Pi_tot, WF_lmbda_c_tilde, Jac_lmbda_c_tilde, lmbda_c_tilde, bc_lmbda_c_tilde):
-        OptimisationProblem.__init__(self)
-        self.Pi_tot = Pi_tot
-        self.WF_lmbda_c_tilde = WF_lmbda_c_tilde
-        self.Jac_lmbda_c_tilde = Jac_lmbda_c_tilde
-        self.lmbda_c_tilde = lmbda_c_tilde
-        self.bc_lmbda_c_tilde = bc_lmbda_c_tilde
-
-    def f(self, x):
-        self.lmbda_c_tilde.vector()[:] = x
-        return assemble(self.Pi_tot)
-    
-    def F(self, b, x):
-        self.lmbda_c_tilde.vector()[:] = x
-        assemble(self.WF_lmbda_c_tilde, b)
-        for bc in self.bc_lmbda_c_tilde:
-            bc.apply(b)
-    
-    def J(self, A, x):
-        self.lmbda_c_tilde.vector()[:] = x
-        assemble(self.Jac_lmbda_c_tilde, A)
-        for bc in self.bc_lmbda_c_tilde:
-            bc.apply(A)
-
 
 class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqualStrainRateIndependentCompositeuFJCNetworkNonlocalScissionNetworkFractureProblem(object):
     """
@@ -225,15 +194,66 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
                                                          }
 
         # solver_bounded_lmbda_c_tilde
-        self.solver_bounded_lmbda_c_tilde_parameters_dict = {"maximum_iterations": 100,
-                                                             "report": False,
-                                                             "line_search": "more-thuente",
-                                                             "linear_solver": "cg",
-                                                             "preconditioner" : "hypre_amg",
-                                                             "method": "tron",
-                                                             "gradient_absolute_tol": 1e-8,
-                                                             "gradient_relative_tol": 1e-8,
-                                                             "error_on_nonconvergence": True}
+        self.solver_bounded_lmbda_c_tilde_parameters_dict = {"nonlinear_solver": "snes",
+                                                             "symmetric": True,
+                                                             "snes_solver": {"linear_solver": "umfpack",
+                                                                             "method": "vinewtonssls",
+                                                                             "line_search": "basic",
+                                                                             "maximum_iterations": 50,
+                                                                             "absolute_tolerance": 1e-8,
+                                                                             "relative_tolerance": 1e-5,
+                                                                             "solution_tolerance": 1e-5,
+                                                                             "report": True,
+                                                                             "error_on_nonconvergence": False
+                                                                             }
+                                                                             }
+
+        # solver_unbounded_lmbda_c_tilde
+        self.solver_unbounded_lmbda_c_tilde_parameters_dict = {"nonlinear_solver": "snes",
+                                                               "symmetric": True,
+                                                               "snes_solver": {"linear_solver": "mumps",
+                                                                               "method": "newtontr",
+                                                                               "line_search": "cp",
+                                                                               "preconditioner": "hypre_amg",
+                                                                               "maximum_iterations": 200,
+                                                                               "absolute_tolerance": 1e-8,
+                                                                               "relative_tolerance": 1e-7,
+                                                                               "solution_tolerance": 1e-7,
+                                                                               "report": True,
+                                                                               "error_on_nonconvergence": False
+                                                                               }
+                                                                               }
+
+        # solver_bounded_monolithic
+        self.solver_bounded_monolithic_parameters_dict = {"nonlinear_solver": "snes",
+                                                          "symmetric": True,
+                                                          "snes_solver": {"linear_solver": "umfpack",
+                                                                          "method": "vinewtonssls",
+                                                                          "line_search": "basic",
+                                                                          "maximum_iterations": 50,
+                                                                          "absolute_tolerance": 1e-8,
+                                                                          "relative_tolerance": 1e-5,
+                                                                          "solution_tolerance": 1e-5,
+                                                                          "report": True,
+                                                                          "error_on_nonconvergence": False
+                                                                          }
+                                                                          }
+
+        # solver_unbounded_monolithic
+        self.solver_unbounded_monolithic_parameters_dict = {"nonlinear_solver": "snes",
+                                                            "symmetric": True,
+                                                            "snes_solver": {"linear_solver": "mumps",
+                                                                            "method": "newtontr",
+                                                                            "line_search": "cp",
+                                                                            "preconditioner": "hypre_amg",
+                                                                            "maximum_iterations": 200,
+                                                                            "absolute_tolerance": 1e-8,
+                                                                            "relative_tolerance": 1e-7,
+                                                                            "solution_tolerance": 1e-7,
+                                                                            "report": True,
+                                                                            "error_on_nonconvergence": False
+                                                                            }
+                                                                            }
     
     def set_user_modelname(self):
         mp = self.parameters["material"]
@@ -284,6 +304,18 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
 
     def set_variational_formulation(self):
         """
+        Define the variational formulation problem to be solved
+        """
+        femp = self.parameters["fem"]
+
+        if femp["solver_algorithm"] == "alternate_minimization":
+            self.set_alternate_minimization_variational_formulation()
+        
+        elif femp["solver_algorithm"] == "monolithic":
+            self.set_monolithic_variational_formulation()
+    
+    def set_alternate_minimization_variational_formulation(self):
+        """
         Define the variational formulation problem to be solved using
         the alternate minimization solution scheme
         """
@@ -298,6 +330,8 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
         # Create function space for non-local chain stretch from the
         # prior deformation step
         self.V_lmbda_c_tilde_prior = FunctionSpace(self.mesh, "CG", femp["scalar_prmtr_degree"])
+        # Create function space for maximal non-local chain stretch
+        self.V_lmbda_c_tilde_max = FunctionSpace(self.mesh, "CG", femp["scalar_prmtr_degree"])
         # # Create function space for gradient activity
         # self.V_g = FunctionSpace(self.mesh, "CG", femp["scalar_prmtr_degree"])
         # # Create function space for normalized anisotropic interaction
@@ -315,9 +349,11 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
         self.v_lmbda_c_tilde = TestFunction(self.V_lmbda_c_tilde)
 
         # Define solution functions for non-local chain stretch from
-        # prior deformation step, gradient activity, and normalized
-        # anisotropic interaction tensor, respectively
+        # prior deformation step, maximal non-local chain stretch, 
+        #gradient activity, and normalized anisotropic interaction
+        # tensor, respectively
         self.lmbda_c_tilde_prior = Function(self.V_lmbda_c_tilde_prior)
+        self.lmbda_c_tilde_max = Function(self.V_lmbda_c_tilde_max)
         # self.g = Function(self.V_g)
         # self.H_tilde = Function(self.V_H_tilde)
 
@@ -334,6 +370,10 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
                 vals[0] = 1.0
         
         class LambdaCTildePriorInitialCondition(UserExpression):
+            def eval(self, vals, x):
+                vals[0] = 0.0
+        
+        class LambdaCTildeMaxInitialCondition(UserExpression):
             def eval(self, vals, x):
                 vals[0] = 0.0
         
@@ -359,6 +399,9 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
         lmbda_c_tilde_prior_ic = LambdaCTildePriorInitialCondition(degree=femp["scalar_prmtr_degree"])
         self.lmbda_c_tilde_prior.interpolate(lmbda_c_tilde_prior_ic)
         
+        lmbda_c_tilde_max_ic = LambdaCTildeMaxInitialCondition(degree=femp["scalar_prmtr_degree"])
+        self.lmbda_c_tilde_max.interpolate(lmbda_c_tilde_max_ic)
+        
         # g_ic = GInitialCondition(degree=femp["scalar_prmtr_degree"])
         # self.g.interpolate(g_ic)
 
@@ -368,32 +411,34 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
         # # Initialization
         # self.lmbda_c_tilde = interpolate(Expression("1.", degree=femp["scalar_prmtr_degree"]), self.V_lmbda_c_tilde)
         # self.lmbda_c_tilde_prior = interpolate(Expression("1.", degree=femp["scalar_prmtr_degree"]), self.V_lmbda_c_tilde_prior)
+        # self.lmbda_c_tilde_max = interpolate(Expression("1.", degree=femp["scalar_prmtr_degree"]), self.V_lmbda_c_tilde_max)
 
-        # Create function space for lower-bound and upper-bound of non-local chain stretch
-        self.V_lmbda_c_tilde_lb = FunctionSpace(self.mesh, "CG", femp["scalar_prmtr_degree"])
-        self.lmbda_c_tilde_lb = Function(self.V_lmbda_c_tilde_lb)
+        if femp["solver_bounded"]:
+            # Create function space for lower-bound and upper-bound of non-local chain stretch
+            self.V_lmbda_c_tilde_lb = FunctionSpace(self.mesh, "CG", femp["scalar_prmtr_degree"])
+            self.lmbda_c_tilde_lb = Function(self.V_lmbda_c_tilde_lb)
 
-        self.V_lmbda_c_tilde_ub = FunctionSpace(self.mesh, "CG", femp["scalar_prmtr_degree"])
-        self.lmbda_c_tilde_ub = Function(self.V_lmbda_c_tilde_ub)
+            self.V_lmbda_c_tilde_ub = FunctionSpace(self.mesh, "CG", femp["scalar_prmtr_degree"])
+            self.lmbda_c_tilde_ub = Function(self.V_lmbda_c_tilde_ub)
 
-        class LambdaCTildeLowerBoundInitialCondition(UserExpression):
-            def eval(self, vals, x):
-                vals[0] = mp["lmbda_c_tilde_lb"]
-        
-        class LambdaCTildeUpperBoundInitialCondition(UserExpression):
-            def eval(self, vals, x):
-                vals[0] = mp["lmbda_c_tilde_ub"]
-        
-        lmbda_c_tilde_lb_ic = LambdaCTildeLowerBoundInitialCondition(degree=femp["scalar_prmtr_degree"])
-        self.lmbda_c_tilde_lb.interpolate(lmbda_c_tilde_lb_ic)
+            class LambdaCTildeLowerBoundInitialCondition(UserExpression):
+                def eval(self, vals, x):
+                    vals[0] = mp["lmbda_c_tilde_lb"]
+            
+            class LambdaCTildeUpperBoundInitialCondition(UserExpression):
+                def eval(self, vals, x):
+                    vals[0] = mp["lmbda_c_tilde_ub"]
+            
+            lmbda_c_tilde_lb_ic = LambdaCTildeLowerBoundInitialCondition(degree=femp["scalar_prmtr_degree"])
+            self.lmbda_c_tilde_lb.interpolate(lmbda_c_tilde_lb_ic)
 
-        lmbda_c_tilde_ub_ic = LambdaCTildeUpperBoundInitialCondition(degree=femp["scalar_prmtr_degree"])
-        self.lmbda_c_tilde_ub.interpolate(lmbda_c_tilde_ub_ic)
+            lmbda_c_tilde_ub_ic = LambdaCTildeUpperBoundInitialCondition(degree=femp["scalar_prmtr_degree"])
+            self.lmbda_c_tilde_ub.interpolate(lmbda_c_tilde_ub_ic)
 
-        # Initialization
-        # self.lmbda_c_tilde_lb = interpolate(Expression("1.", degree=femp["scalar_prmtr_degree"]), self.V_lmbda_c_tilde)
-        # The upper-bound is technically (+)infinity
-        # self.lmbda_c_tilde_ub = interpolate(Expression("10000.0", degree=femp["scalar_prmtr_degree"]), self.V_lmbda_c_tilde_ub)
+            # Initialization
+            # self.lmbda_c_tilde_lb = interpolate(Expression("1.", degree=femp["scalar_prmtr_degree"]), self.V_lmbda_c_tilde)
+            # The upper-bound is technically (+)infinity
+            # self.lmbda_c_tilde_ub = interpolate(Expression("10000.0", degree=femp["scalar_prmtr_degree"]), self.V_lmbda_c_tilde_ub)
         
         # Define objects needed for calculations
         self.I           = Identity(len(self.u))
@@ -401,6 +446,7 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
         self.V_DG_scalar = FunctionSpace(self.mesh, "DG", femp["scalar_prmtr_degree"])
         self.V_DG_tensor = TensorFunctionSpace(self.mesh, "DG", 0)
         
+        self.lmbda_c_tilde_max_val = Function(self.V_DG_scalar)# Function(self.V_lmbda_c_tilde_max_val)
         # self.g_val = Function(self.V_DG_scalar)# Function(self.V_g_val)
         # self.H_tilde_val = Function(self.V_DG_tensor)
         
@@ -418,6 +464,12 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
         
         if ppp["save_lmbda_nu_tilde_mesh"] or ppp["save_lmbda_nu_tilde_chunks"]:
             self.lmbda_nu_tilde_val = Function(self.V_DG_scalar)
+        
+        if ppp["save_lmbda_c_eq_tilde_max_mesh"] or ppp["save_lmbda_c_eq_tilde_max_chunks"]:
+            self.lmbda_c_eq_tilde_max_val = Function(self.V_DG_scalar)
+        
+        if ppp["save_lmbda_nu_tilde_max_mesh"] or ppp["save_lmbda_nu_tilde_max_chunks"]:
+            self.lmbda_nu_tilde_max_val = Function(self.V_DG_scalar)
         
         if ppp["save_upsilon_c_mesh"] or ppp["save_upsilon_c_chunks"]:
             self.upsilon_c_val = Function(self.V_DG_scalar)
@@ -459,9 +511,9 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
             self.F_val = Function(self.V_DG_tensor)
         
         if ppp["save_sigma_mesh"] or ppp["save_sigma_chunks"]:
-            self.sigma_mm_val = Function(self.V_DG_tensor)
-            self.sigma_nl_val = Function(self.V_DG_tensor)
-            self.sigma_nc_val = Function(self.V_DG_tensor)
+            self.sigma_val = Function(self.V_DG_tensor)
+            self.sigma_penalty_term_val = Function(self.V_DG_tensor)
+            self.sigma_less_penalty_term_val = Function(self.V_DG_tensor)
 
         # Kinematics
         # deformation gradient tensor
@@ -474,7 +526,7 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
         self.C = self.F.T*self.F
         # 2D plane strain form of the trace of right Cauchy-Green
         # tensor, where F_33 = 1 always
-        self.I_C = tr(self.C) + 1
+        self.I_C = tr(self.C)+1
         # local chain stretch
         self.lmbda_c = sqrt(self.I_C/3.0)
 
@@ -487,43 +539,271 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
         # self.g = interpolate(Expression("1.", degree=femp["scalar_prmtr_degree"]), self.V_CG_scalar)
         # self.H_tilde = self.I # Function(self.V_DG_tensor) # self.I
         # local_project(self.I, self.V_DG_tensor, self.H_tilde)
-        self.g = Constant(1.0)
+        self.g = Constant(1)
         self.H_tilde = self.I
         # self.g = self.g_ufl_fenics_mesh_func()
 
-        # Calculate external work of the network
-        self.W_ext = (
-            dot(self.b_hat, self.v_u)*dx(metadata=self.metadata)
-            + dot(self.t_hat, self.v_u)*ds
+        # Calculate the weak form for displacement
+        self.WF_u = (
+            inner(self.first_pk_stress_ufl_fenics_mesh_func(), grad(self.v_u))*dx(metadata=self.metadata)
+            - dot(self.b_hat, self.v_u)*dx(metadata=self.metadata)
+            - dot(self.t_hat, self.v_u)*ds
         )
 
-        # Calculate total Helmholtz free energy of the network
-        self.F_tot = self.psi_tot_ufl_fenics_mesh_func()*dx(metadata=self.metadata)
-
-        # Calculate total potential energy of the network
-        self.Pi_tot = self.F_tot - self.W_ext
-
-        # Calculate the Gateaux derivative for the total potential
-        # energy of the network with respect to displacement (weak form
-        # for displacement)
-        self.WF_u = derivative(self.Pi_tot, self.u, self.v_u)
-
-        # Calculate the Gateaux derivative for the weak form for
-        # displacement with respect to displacement (Jacobian for
-        # displacement)
+        # Calculate the Gateaux derivative for displacement
         self.Jac_u = derivative(self.WF_u, self.u, self.du)
 
-        # Calculate the Gateaux derivative for the total potential
-        # energy of the network with respect to non-local chain stretch
-        # (weak form for non-local chain stretch)
-        self.WF_lmbda_c_tilde = derivative(self.Pi_tot, self.lmbda_c_tilde, self.v_lmbda_c_tilde)
+        # Calculate the weak form for non-local chain stretch
+        self.WF_lmbda_c_tilde = (
+            self.v_lmbda_c_tilde*self.lmbda_c_tilde*dx(metadata=self.metadata)
+            + mp["l_nl"]**2*self.g*dot(grad(self.v_lmbda_c_tilde), self.H_tilde*grad(self.lmbda_c_tilde))*dx(metadata=self.metadata)
+            - self.v_lmbda_c_tilde*self.lmbda_c*dx(metadata=self.metadata)
+        )
 
-        # Calculate the Gateaux derivative for the weak form for
-        # non-local chain stretch with respect to non-local chain
-        # stretch (Jacobian for non-local chain stretch)
+        # Calculate the Gateaux derivative for non-local chain stretch
         self.Jac_lmbda_c_tilde = derivative(self.WF_lmbda_c_tilde, self.lmbda_c_tilde, self.dlmbda_c_tilde)
     
+    def set_monolithic_variational_formulation(self):
+        """
+        Define the variational formulation problem to be solved using
+        the monolithic solution scheme
+        """
+        femp = self.parameters["fem"]
+        mp = self.parameters["material"]
+        ppp = self.parameters["post_processing"]
+
+        # Create function space for displacement
+        self.V_u = VectorFunctionSpace(self.mesh, "CG", femp["u_degree"])
+        # Create function space for non-local chain stretch
+        self.V_lmbda_c_tilde = FunctionSpace(self.mesh, "CG", femp["scalar_prmtr_degree"])
+        # Create function space for maximal non-local chain stretch
+        self.V_lmbda_c_tilde_max = FunctionSpace(self.mesh, "CG", femp["scalar_prmtr_degree"])
+        self.V_lmbda_c_tilde_max_val = FunctionSpace(self.mesh, "CG", femp["scalar_prmtr_degree"])
+        self.V_lmbda_c_tilde_max_prior = FunctionSpace(self.mesh, "CG", femp["scalar_prmtr_degree"])
+        # # Create function space for gradient activity
+        self.V_g = FunctionSpace(self.mesh, "CG", femp["scalar_prmtr_degree"])
+        # self.V_g_val = FunctionSpace(self.mesh, "CG", femp["scalar_prmtr_degree"])
+        # # Create function space for normalized anisotropic interaction
+        # # tensor
+        # self.V_H_tilde = TensorFunctionSpace(self.mesh, "DG", 0) # make the degree value a default parameter soon...
+
+        # Create UFL element from the displacement function space
+        self.V_u_ufl_elem = self.V_u.ufl_element()
+        # Create UFL element from the non-local chain stretch function space
+        self.V_lmbda_c_tilde_ufl_elem = self.V_lmbda_c_tilde.ufl_element()
+        # Create UFL mixed element
+        self.mixed_ufl_elem = MixedElement([self.V_u_ufl_elem, self.V_lmbda_c_tilde_ufl_elem])
+        # Define function space for the UFL mixed element
+        self.V = FunctionSpace(self.mesh, self.mixed_ufl_elem)
+
+        # Define solution, trial, and test functions for the UFL mixed element
+        self.mixed_space = Function(self.V)
+        self.dmixed_space = TrialFunction(self.V)
+        self.v_mixed_space = TestFunction(self.V)
+
+        self.lmbda_c_tilde_max = Function(self.V_lmbda_c_tilde_max)
+        self.lmbda_c_tilde_max_prior = Function(self.V_lmbda_c_tilde_max_prior)
+        self.g = Function(self.V_g)
+        # self.H_tilde = Function(self.V_H_tilde)
+
+        # Initialization
+        class MixedSpaceInitialConditions(UserExpression):
+            def eval(self, vals, x):
+                vals[0] = 0.0 # u_x
+                vals[1] = 0.0 # u_y
+                vals[2] = 1.0 # lambda_c_tilde
+            def value_shape(self):
+                return (3,)
+        
+        class LambdaCTildeMaxInitialCondition(UserExpression):
+            def eval(self, vals, x):
+                vals[0] = 0.0
+        
+        class GInitialCondition(UserExpression):
+            def eval(self, vals, x):
+                vals[0] = 1.0
+        
+        # class HTildeInitialCondition(UserExpression):
+        #     def eval(self, vals, x):
+        #         vals[0] = 1
+        #         vals[1] = 0
+        #         vals[2] = 0
+        #         vals[3] = 1
+        #     def value_shape(self):
+        #         return (2,2)
+        
+        mixed_space_degree = femp["u_degree"]
+        ics = MixedSpaceInitialConditions(degree=mixed_space_degree)
+        self.mixed_space.interpolate(ics)
+        
+        lmbda_c_tilde_max_ic = LambdaCTildeMaxInitialCondition(degree=femp["scalar_prmtr_degree"])
+        self.lmbda_c_tilde_max.interpolate(lmbda_c_tilde_max_ic)
+        self.lmbda_c_tilde_max_prior.interpolate(lmbda_c_tilde_max_ic)
+
+        g_ic = GInitialCondition(degree=femp["scalar_prmtr_degree"])
+        self.g.interpolate(g_ic)
+
+        # H_tilde_init = HTildeInitialCondition(degree=0) # make the degree value a default parameter soon...
+        # self.H_tilde.interpolate(H_tilde_init)
+
+        if femp["solver_bounded"]:
+            # Create function space for bounds
+            self.lower_bound = Function(self.V)
+            self.upper_bound = Function(self.V)
+
+            # lower_bound_vector = np.hstack((-10*np.ones(self.V.sub(0).dim()), self.lmbda_c_tilde_max.vector()))
+            lower_bound_vector = np.hstack((-10*np.ones(self.V.sub(0).dim()), mp["lmbda_c_tilde_lb"]*np.ones(self.V.sub(1).dim())))
+            upper_bound_vector = np.hstack((10*np.ones(self.V.sub(0).dim()), mp["lmbda_c_tilde_ub"]*np.ones(self.V.sub(1).dim())))
+
+            self.lower_bound.vector()[:] = lower_bound_vector
+            self.upper_bound.vector()[:] = upper_bound_vector
+
+        # self.lmbda_c_tilde_max = interpolate(Expression("0.", degree=femp["scalar_prmtr_degree"]), self.V_lmbda_c_tilde_max)
+        # self.g = interpolate(Expression("1.", degree=femp["scalar_prmtr_degree"]), self.V_g)
+        # self.g = Constant(1.0)
+
+        # Split the mixed function space and the mixed test function space for displacement and non-local chain stretch
+        (self.u, self.lmbda_c_tilde) = split(self.mixed_space)
+        (self.v_u, self.v_lmbda_c_tilde) = split(self.v_mixed_space)
+
+        # Define objects needed for calculations
+        self.I           = Identity(len(self.u))
+        self.V_CG_scalar = FunctionSpace(self.mesh, "CG", femp["scalar_prmtr_degree"])
+        self.V_DG_scalar = FunctionSpace(self.mesh, "DG", femp["scalar_prmtr_degree"])
+        self.V_DG_tensor = TensorFunctionSpace(self.mesh, "DG", 0) # make the degree value a default parameter soon...
+        
+        # self.lmbda_c_tilde_max_val = Function(self.V_DG_scalar)
+        # self.g_val = Function(self.V_DG_scalar)
+        self.lmbda_c_tilde_max_val = Function(self.V_DG_scalar)# Function(self.V_lmbda_c_tilde_max_val)
+        self.g_val = Function(self.V_DG_scalar)# Function(self.V_g_val)
+        # self.H_tilde_val = Function(self.V_DG_tensor)
+        
+        if ppp["save_lmbda_c_mesh"] or ppp["save_lmbda_c_chunks"]:
+            self.lmbda_c_val = Function(self.V_DG_scalar)
+        
+        if ppp["save_lmbda_c_eq_mesh"] or ppp["save_lmbda_c_eq_chunks"]:
+            self.lmbda_c_eq_val = Function(self.V_DG_scalar)
+        
+        if ppp["save_lmbda_nu_mesh"] or ppp["save_lmbda_nu_chunks"]:
+            self.lmbda_nu_val = Function(self.V_DG_scalar)
+        
+        if ppp["save_lmbda_c_eq_tilde_mesh"] or ppp["save_lmbda_c_eq_tilde_chunks"]:
+            self.lmbda_c_eq_tilde_val = Function(self.V_DG_scalar)
+        
+        if ppp["save_lmbda_nu_tilde_mesh"] or ppp["save_lmbda_nu_tilde_chunks"]:
+            self.lmbda_nu_tilde_val = Function(self.V_DG_scalar)
+        
+        if ppp["save_lmbda_c_eq_tilde_max_mesh"] or ppp["save_lmbda_c_eq_tilde_max_chunks"]:
+            self.lmbda_c_eq_tilde_max_val = Function(self.V_DG_scalar)
+        
+        if ppp["save_lmbda_nu_tilde_max_mesh"] or ppp["save_lmbda_nu_tilde_max_chunks"]:
+            self.lmbda_nu_tilde_max_val = Function(self.V_DG_scalar)
+        
+        if ppp["save_upsilon_c_mesh"] or ppp["save_upsilon_c_chunks"]:
+            self.upsilon_c_val = Function(self.V_DG_scalar)
+        
+        if ppp["save_Upsilon_c_mesh"] or ppp["save_Upsilon_c_chunks"]:
+            self.Upsilon_c_val = Function(self.V_DG_scalar)
+        
+        if ppp["save_d_c_mesh"] or ppp["save_d_c_chunks"]:
+            self.d_c_val = Function(self.V_DG_scalar)
+        
+        if ppp["save_D_c_mesh"] or ppp["save_D_c_chunks"]:
+            self.D_c_val = Function(self.V_DG_scalar)
+        
+        if ppp["save_epsilon_cnu_diss_hat_mesh"] or ppp["save_epsilon_cnu_diss_hat_chunks"]:
+            self.epsilon_cnu_diss_hat_val = Function(self.V_DG_scalar)
+        
+        if ppp["save_Epsilon_cnu_diss_hat_mesh"] or ppp["save_Epsilon_cnu_diss_hat_chunks"]:
+            self.Epsilon_cnu_diss_hat_val = Function(self.V_DG_scalar)
+        
+        if ppp["save_epsilon_c_diss_hat_mesh"] or ppp["save_epsilon_c_diss_hat_chunks"]:
+            self.epsilon_c_diss_hat_val = Function(self.V_DG_scalar)
+        
+        if ppp["save_Epsilon_c_diss_hat_mesh"] or ppp["save_Epsilon_c_diss_hat_chunks"]:
+            self.Epsilon_c_diss_hat_val = Function(self.V_DG_scalar)
+        
+        if ppp["save_overline_epsilon_cnu_diss_hat_mesh"] or ppp["save_overline_epsilon_cnu_diss_hat_chunks"]:
+            self.overline_epsilon_cnu_diss_hat_val = Function(self.V_DG_scalar)
+        
+        if ppp["save_overline_Epsilon_cnu_diss_hat_mesh"] or ppp["save_overline_Epsilon_cnu_diss_hat_chunks"]:
+            self.overline_Epsilon_cnu_diss_hat_val = Function(self.V_DG_scalar)
+        
+        if ppp["save_overline_epsilon_c_diss_hat_mesh"] or ppp["save_overline_epsilon_c_diss_hat_chunks"]:
+            self.overline_epsilon_c_diss_hat_val = Function(self.V_DG_scalar)
+        
+        if ppp["save_overline_Epsilon_c_diss_hat_mesh"] or ppp["save_overline_Epsilon_c_diss_hat_chunks"]:
+            self.overline_Epsilon_c_diss_hat_val = Function(self.V_DG_scalar)
+        
+        if ppp["save_F_mesh"] or ppp["save_F_chunks"]:
+            self.F_val = Function(self.V_DG_tensor)
+        
+        if ppp["save_sigma_mesh"] or ppp["save_sigma_chunks"]:
+            self.sigma_val = Function(self.V_DG_tensor)
+            self.sigma_penalty_term_val = Function(self.V_DG_tensor)
+            self.sigma_less_penalty_term_val = Function(self.V_DG_tensor)
+
+        # Kinematics
+        # deformation gradient tensor
+        self.F = self.I + grad(self.u)
+        # inverse deformation gradient tensor
+        self.F_inv = inv(self.F)
+        # volume ratio
+        self.J = det(self.F)
+        # right Cauchy-Green tensor
+        self.C = self.F.T*self.F
+        # 2D plane strain form of the trace of right Cauchy-Green
+        # tensor, where F_33 = 1 always
+        self.I_C = tr(self.C)+1
+        # local chain stretch
+        self.lmbda_c = sqrt(self.I_C/3.0)
+    
+        # Define body force and traction force
+        self.b_hat = Constant((0.0, 0.0)) # Body force per unit volume
+        self.t_hat = Constant((0.0, 0.0)) # Traction force on the boundary
+
+        # Define gradient activity and normalized anisotropic
+        # interaction tensor
+        # self.g = self.g_ufl_fenics_mesh_func()
+        # self.H_tilde = self.I # Function(self.V_DG_tensor) # self.I
+        # local_project(self.I, self.V_DG_tensor, self.H_tilde)
+        # self.g = Constant(1)
+        self.H_tilde = self.I
+
+        # Calculate the weak form for displacement
+        self.WF_u = (
+            inner(self.first_pk_stress_ufl_fenics_mesh_func(), grad(self.v_u))*dx(metadata=self.metadata)
+            - dot(self.b_hat, self.v_u)*dx(metadata=self.metadata)
+            - dot(self.t_hat, self.v_u)*ds
+        )
+
+        # Calculate the weak form for non-local chain stretch
+        self.WF_lmbda_c_tilde = (
+            self.v_lmbda_c_tilde*self.lmbda_c_tilde*dx(metadata=self.metadata)
+            + mp["l_nl"]**2*self.g*dot(grad(self.v_lmbda_c_tilde), self.H_tilde*grad(self.lmbda_c_tilde))*dx(metadata=self.metadata)
+            - self.v_lmbda_c_tilde*self.lmbda_c*dx(metadata=self.metadata)
+        )
+
+        # Calculate the overall weak form
+        self.WF = self.WF_u + self.WF_lmbda_c_tilde
+
+        # Calculate the Gateaux derivative
+        self.Jac = derivative(self.WF, self.mixed_space, self.dmixed_space)
+    
     def define_bcs(self):
+        """
+        Define boundary conditions by returning a list, or several
+        lists, of boundary conditions
+        """
+        femp = self.parameters["fem"]
+
+        if femp["solver_algorithm"] == "alternate_minimization":
+            self.define_bc_alternate_minimization()
+        
+        elif femp["solver_algorithm"] == "monolithic":
+            self.bc_monolithic = self.define_bc_monolithic()
+    
+    def define_bc_alternate_minimization(self):
         """
         Define boundary conditions for the alternate minimization
         solution scheme by returning a list of boundary conditions on
@@ -543,6 +823,13 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
         """
         Return a list of boundary conditions on the non-local chain
         stretch
+        """
+        return []
+    
+    def define_bc_monolithic(self):
+        """
+        Return a list of boundary conditions for the monolithic solution
+        scheme
         """
         return []
     
@@ -732,6 +1019,18 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
             self.lmbda_nu_tilde_chunks = []
             self.lmbda_nu_tilde_chunks_val = [[0. for nu_chunk_indx in range(self.nu_chunks_num)] for meshpoint_indx in range(self.meshpoint_num)]
         
+        if ppp["save_lmbda_c_tilde_max_chunks"]:
+            self.lmbda_c_tilde_max_chunks     = []
+            self.lmbda_c_tilde_max_chunks_val = [0. for meshpoint_indx in range(self.meshpoint_num)]
+        
+        if ppp["save_lmbda_c_eq_tilde_max_chunks"]:
+            self.lmbda_c_eq_tilde_max_chunks     = []
+            self.lmbda_c_eq_tilde_max_chunks_val = [[0. for nu_chunk_indx in range(self.nu_chunks_num)] for meshpoint_indx in range(self.meshpoint_num)]
+        
+        if ppp["save_lmbda_nu_tilde_max_chunks"]:
+            self.lmbda_nu_tilde_max_chunks     = []
+            self.lmbda_nu_tilde_max_chunks_val = [[0. for nu_chunk_indx in range(self.nu_chunks_num)] for meshpoint_indx in range(self.meshpoint_num)]
+        
         if ppp["save_g_chunks"]:
             self.g_chunks = []
             self.g_chunks_val = [0. for meshpoint_indx in range(self.meshpoint_num)]
@@ -804,19 +1103,31 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
         self.F_11_chunks_val = [0. for meshpoint_indx in range(self.meshpoint_num)]
     
     def set_sigma_chunks(self):
-        self.sigma_mm_11_chunks     = []
-        self.sigma_mm_11_chunks_val = [0. for meshpoint_indx in range(self.meshpoint_num)]
-        self.sigma_nl_11_chunks     = []
-        self.sigma_nl_11_chunks_val = [0. for meshpoint_indx in range(self.meshpoint_num)]
-        self.sigma_nc_11_chunks     = []
-        self.sigma_nc_11_chunks_val = [0. for meshpoint_indx in range(self.meshpoint_num)]
+        self.sigma_11_chunks     = []
+        self.sigma_11_chunks_val = [0. for meshpoint_indx in range(self.meshpoint_num)]
+        self.sigma_11_penalty_term_chunks     = []
+        self.sigma_11_penalty_term_chunks_val = [0. for meshpoint_indx in range(self.meshpoint_num)]
+        self.sigma_11_less_penalty_term_chunks     = []
+        self.sigma_11_less_penalty_term_chunks_val = [0. for meshpoint_indx in range(self.meshpoint_num)]
     
     def solver_setup(self):
         """
         Setup the weak form solver
         """
-        self.setup_u_solver()
-        self.setup_bounded_lmbda_c_tilde_solver()
+        femp = self.parameters["fem"]
+
+        if femp["solver_algorithm"] == "alternate_minimization":
+            self.setup_u_solver()
+            if femp["solver_bounded"]:
+                self.setup_bounded_lmbda_c_tilde_solver()
+            else:
+                self.setup_unbounded_lmbda_c_tilde_solver()
+        
+        elif femp["solver_algorithm"] == "monolithic":
+            if femp["solver_bounded"]:
+                self.setup_bounded_monolithic_solver()
+            else:
+                self.setup_unbounded_monolithic_solver()
 
     def setup_u_solver(self):
         """
@@ -832,10 +1143,51 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
         """
         Setup the bounded non-local chain stretch solver
         """
-        self.solver_bounded_lmbda_c_tilde = PETScTAOSolver()
+        self.problem_bounded_lmbda_c_tilde = NonlinearVariationalProblem(self.WF_lmbda_c_tilde, self.lmbda_c_tilde, self.bc_lmbda_c_tilde, J=self.Jac_lmbda_c_tilde)
+        self.problem_bounded_lmbda_c_tilde.set_bounds(self.lmbda_c_tilde_max.vector(), self.lmbda_c_tilde_ub.vector())
+        # self.problem_bounded_lmbda_c_tilde.set_bounds(self.lmbda_c_tilde_lb.vector(), self.lmbda_c_tilde_ub.vector())
+
+        self.solver_bounded_lmbda_c_tilde = NonlinearVariationalSolver(self.problem_bounded_lmbda_c_tilde)
 
         self.solver_bounded_lmbda_c_tilde.parameters.update(self.solver_bounded_lmbda_c_tilde_parameters_dict)
         info(self.solver_bounded_lmbda_c_tilde.parameters, True)
+    
+    def setup_unbounded_lmbda_c_tilde_solver(self):
+        """
+        Setup the unbounded non-local chain stretch solver
+        """
+        self.problem_unbounded_lmbda_c_tilde = NonlinearVariationalProblem(self.WF_lmbda_c_tilde, self.lmbda_c_tilde, self.bc_lmbda_c_tilde, J=self.Jac_lmbda_c_tilde)
+        self.solver_unbounded_lmbda_c_tilde = NonlinearVariationalSolver(self.problem_unbounded_lmbda_c_tilde)
+
+        self.solver_unbounded_lmbda_c_tilde.parameters.update(self.solver_unbounded_lmbda_c_tilde_parameters_dict)
+        info(self.solver_unbounded_lmbda_c_tilde.parameters, True)
+    
+    def setup_bounded_monolithic_solver(self):
+        """
+        Setup the bounded monolithic weak form solver
+        """
+        self.problem_bounded_monolithic = NonlinearVariationalProblem(self.WF, self.mixed_space, self.bc_monolithic, J=self.Jac)
+        self.problem_bounded_monolithic.set_bounds(self.lower_bound.vector(), self.upper_bound.vector())
+        # self.problem_bounded_monolithic.set_bounds(self.lower_bound, self.upper_bound)
+
+        self.solver_bounded_monolithic = NonlinearVariationalSolver(self.problem_bounded_monolithic)
+
+        self.solver_bounded_monolithic.parameters.update(self.solver_bounded_monolithic_parameters_dict)
+        info(self.solver_bounded_monolithic.parameters, True)
+
+        (self.u, self.lmbda_c_tilde) = self.mixed_space.split(deepcopy=True)
+    
+    def setup_unbounded_monolithic_solver(self):
+        """
+        Setup the unbounded monolithic weak form solver
+        """
+        self.problem_unbounded_monolithic = NonlinearVariationalProblem(self.WF, self.mixed_space, self.bc_monolithic, J=self.Jac)
+        self.solver_unbounded_monolithic = NonlinearVariationalSolver(self.problem_unbounded_monolithic)
+
+        self.solver_unbounded_monolithic.parameters.update(self.solver_unbounded_monolithic_parameters_dict)
+        info(self.solver_unbounded_monolithic.parameters, True)
+
+        (self.u, self.lmbda_c_tilde) = self.mixed_space.split(deepcopy=True)
     
     def solve(self):
         """
@@ -882,12 +1234,33 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
     
     def solve_step(self):
         """
+        Solve the weak form
+        """
+        femp = self.parameters["fem"]
+
+        if femp["solver_algorithm"] == "alternate_minimization":
+            if femp["solver_bounded"]:
+                self.solve_bounded_alternate_minimization()
+            else:
+                self.solve_unbounded_alternate_minimization()
+        
+        elif femp["solver_algorithm"] == "monolithic":
+            if femp["solver_bounded"]:
+                self.solve_bounded_monolithic()
+            else:
+                self.solve_unbounded_monolithic()
+    
+    def solve_bounded_alternate_minimization(self):
+        """
         Solve the bounded alternate minimization problem
         """
         dp = self.parameters["deformation"]
+        mp = self.parameters["material"]
 
         itrtn = 1
         error_lmbda_c_tilde = 1.
+
+        self.problem_bounded_lmbda_c_tilde.set_bounds(self.lmbda_c_tilde_max.vector(), self.lmbda_c_tilde_ub.vector())
 
         while itrtn < dp["itrtn_max_lmbda_c_tilde_val"] and error_lmbda_c_tilde > dp["tol_lmbda_c_tilde_val"]:
             error_lmbda_c_tilde = 0.
@@ -904,11 +1277,15 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
             self.lmbda_c_tilde_prior.assign(self.lmbda_c_tilde)
             # update iteration
             itrtn += 1
-        # update the lower bound of the non-local chain stretch to
-        # account for network irreversibility
-        self.lmbda_c_tilde_lb.vector()[:] = self.lmbda_c_tilde.vector()
+        # update maximal non-local chain stretch to account for network
+        # irreversibility
         
-        print0(peval(self.lmbda_c_tilde, self.meshpoints_list[0]))
+        self.lmbda_c_tilde_max.vector()[:] = self.lmbda_c_tilde.vector()
+
+        # lmbda_c_tilde_max_update = conditional(gt(self.lmbda_c_tilde, self.lmbda_c_tilde_max), self.lmbda_c_tilde, self.lmbda_c_tilde_max)
+        # lmbda_c_tilde_max_update = conditional(gt(lmbda_c_tilde_max_update, mp["lmbda_c_tilde_ub"]), mp["lmbda_c_tilde_ub"], lmbda_c_tilde_max_update)
+        # self.lmbda_c_tilde_max.vector()[:] = project(lmbda_c_tilde_max_update, self.V_lmbda_c_tilde_max).vector()
+        print0(peval(self.lmbda_c_tilde_max, self.meshpoints_list[0]))
 
         D_c_val = self.D_c_ufl_fenics_mesh_func()
         D_c_val = conditional(gt(D_c_val, 1.0), 1.0, D_c_val)
@@ -920,6 +1297,151 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
         # # non-local interaction for increasing non-local damage
         # self.g.vector()[:] = project(self.g_ufl_fenics_mesh_func(), self.V_g).vector()
         # print0(peval(self.g, self.meshpoints_list[0]))
+    
+    def solve_unbounded_alternate_minimization(self):
+        """
+        Solve the unbounded alternate minimization problem
+        """
+        dp = self.parameters["deformation"]
+
+        itrtn = 1
+        error_lmbda_c_tilde = 1.
+
+        while itrtn < dp["itrtn_max_lmbda_c_tilde_val"] and error_lmbda_c_tilde > dp["tol_lmbda_c_tilde_val"]:
+            error_lmbda_c_tilde = 0.
+            # solve for the displacement while holding non-local chain stretch fixed
+            self.solve_u()
+            # solve for the non-local chain stretch while holding displacement fixed
+            self.solve_unbounded_lmbda_c_tilde()
+            # calculate the L-infinity error norm for the non-local chain stretch
+            lmbda_c_tilde_diff = self.lmbda_c_tilde.vector() - self.lmbda_c_tilde_prior.vector()
+            error_lmbda_c_tilde = lmbda_c_tilde_diff.norm('linf')
+            # monitor the results
+            print0("Unbounded alternate minimization scheme: Iteration # {0:3d}; error = {1:>14.8f}".format(itrtn, error_lmbda_c_tilde))
+            # update prior non-local chain stretch
+            self.lmbda_c_tilde_prior.assign(self.lmbda_c_tilde)
+            # update iteration
+            itrtn += 1
+        
+        self.lmbda_c_tilde_max.vector()[:] = self.lmbda_c_tilde.vector()
+
+        print0(peval(self.lmbda_c_tilde_max, self.meshpoints_list[0]))
+        # print0(peval(project(self.D_c_ufl_fenics_mesh_func(), self.V_DG_scalar), self.meshpoints_list[0]))
+        D_c_val = self.D_c_ufl_fenics_mesh_func()
+        local_project(D_c_val, self.V_DG_scalar, self.D_c_val)
+        print0(peval(self.D_c_val, self.meshpoints_list[0]))
+        # print0(peval(self.g, self.meshpoints_list[0]))
+    
+    def solve_bounded_monolithic(self):
+        """
+        Solve the bounded monolithic problem
+        """
+        print0("Displacement and non-local chain stretch bounded monolithic problem")
+        mp = self.parameters["material"]
+        # self.problem_bounded_monolithic.set_bounds(self.lower_bound.vector(), self.upper_bound.vector())
+        # self.problem_bounded_monolithic.set_bounds(self.lower_bound, self.upper_bound)
+        (iter, converged) = self.solver_bounded_monolithic.solve()
+        
+        (self.u, self.lmbda_c_tilde) = self.mixed_space.split(deepcopy=True)
+
+        # update maximal non-local chain stretch to account for network
+        # irreversibility
+        # lmbda_c_tilde_max_current = project(conditional(gt(self.lmbda_c_tilde, self.lmbda_c_tilde_max), self.lmbda_c_tilde, self.lmbda_c_tilde_max), self.V_lmbda_c_tilde_max_prior)
+        # self.lmbda_c_tilde_max_prior.vector()[:] = lmbda_c_tilde_max_current.vector()
+        # print0(peval(self.lmbda_c_tilde_max_prior, self.meshpoints_list[0]))
+
+        # self.lmbda_c_tilde_max.vector()[:] = self.lmbda_c_tilde.vector()
+        # lower_bound_vector = np.hstack((-10*np.ones(self.V.sub(0).dim()), self.lmbda_c_tilde_max.vector()))
+        # # lower_bound_vector = np.hstack((-10*np.ones(self.V.sub(0).dim()), mp["lmbda_c_tilde_lb"]*np.ones(self.V.sub(1).dim())))
+        # upper_bound_vector = np.hstack((10*np.ones(self.V.sub(0).dim()), mp["lmbda_c_tilde_ub"]*np.ones(self.V.sub(1).dim())))
+
+        # self.lower_bound.vector()[:] = lower_bound_vector
+        # self.upper_bound.vector()[:] = upper_bound_vector
+
+        lmbda_c_tilde_max_update = conditional(gt(self.lmbda_c_tilde, self.lmbda_c_tilde_max), self.lmbda_c_tilde, self.lmbda_c_tilde_max)
+        lmbda_c_tilde_max_update = conditional(gt(lmbda_c_tilde_max_update, mp["lmbda_c_tilde_ub"]), mp["lmbda_c_tilde_ub"], lmbda_c_tilde_max_update)
+        self.lmbda_c_tilde_max.vector()[:] = project(lmbda_c_tilde_max_update, self.V_lmbda_c_tilde_max).vector()
+
+        # self.lmbda_c_tilde_max.vector()[:] = project(conditional(gt(self.lmbda_c_tilde, self.lmbda_c_tilde_max), self.lmbda_c_tilde, self.lmbda_c_tilde_max), self.V_lmbda_c_tilde_max).vector()
+
+        # self.lmbda_c_tilde_max = conditional(gt(self.lmbda_c_tilde, self.lmbda_c_tilde_max), self.lmbda_c_tilde, self.lmbda_c_tilde_max)
+        # local_project(self.lmbda_c_tilde_max, self.V_lmbda_c_tilde_max_val, self.lmbda_c_tilde_max_val)
+        print0(peval(self.lmbda_c_tilde_max, self.meshpoints_list[0]))
+        # update the gradient activity to account for the decreasing
+        # non-local interaction for increasing non-local damage
+        # self.g = project(self.g_ufl_fenics_mesh_func(), self.V_CG_scalar)
+        D_c_val = self.D_c_ufl_fenics_mesh_func()
+        D_c_val = conditional(gt(D_c_val, 1.0), 1.0, D_c_val)
+        local_project(D_c_val, self.V_DG_scalar, self.D_c_val)
+        print0(peval(self.D_c_val, self.meshpoints_list[0]))
+        # print0(peval(project(D_c_val, self.V_DG_scalar), self.meshpoints_list[0]))
+        
+        # # Below is the correct line of code to update g
+        # # self.g = self.g_ufl_fenics_mesh_func()
+        # # local_project(self.g, self.V_g_val, self.g_val)
+        # g_update = self.g_ufl_fenics_mesh_func()
+        # g_update = conditional(lt(g_update, 0.0), 0.0, g_update)
+        # self.g.vector()[:] = project(g_update, self.V_g).vector()
+
+        # # self.g.vector()[:] = project(self.g_ufl_fenics_mesh_func(), self.V_g).vector()
+
+        # # local_project(self.g, self.V_DG_scalar, self.g_val)
+        # # print0(peval(self.g_val, self.meshpoints_list[0]))
+        # print0(peval(self.g, self.meshpoints_list[0]))
+        
+        # update the normalized anisotropic interaction tensor to
+        # account for the shape, size, and orientation of non-local
+        # interactions at the microscale of the deformed polymer network
+        # self.H_tilde = project(self.H_tilde_ufl_fenics_mesh_func(), self.V_DG_tensor)
+        # local_project(self.H_tilde_ufl_fenics_mesh_func(), self.V_DG_tensor, self.H_tilde)
+        
+        # Figure out how to update H_tilde later
+    
+    def solve_unbounded_monolithic(self):
+        """
+        Solve the unbounded monolithic problem
+        """
+        print0("Displacement and non-local chain stretch unbounded monolithic problem")
+        (iter, converged) = self.solver_unbounded_monolithic.solve()
+        
+        (self.u, self.lmbda_c_tilde) = self.mixed_space.split(deepcopy=True)
+
+        # update maximal non-local chain stretch to account for network
+        # irreversibility
+        # lmbda_c_tilde_max_current = project(conditional(gt(self.lmbda_c_tilde, self.lmbda_c_tilde_max), self.lmbda_c_tilde, self.lmbda_c_tilde_max), self.V_lmbda_c_tilde_max_prior)
+        # self.lmbda_c_tilde_max_prior.vector()[:] = lmbda_c_tilde_max_current.vector()
+        # print0(peval(self.lmbda_c_tilde_max_prior, self.meshpoints_list[0]))
+
+        self.lmbda_c_tilde_max.vector()[:] = project(conditional(gt(self.lmbda_c_tilde, self.lmbda_c_tilde_max), self.lmbda_c_tilde, self.lmbda_c_tilde_max), self.V_lmbda_c_tilde_max).vector()
+        # self.lmbda_c_tilde_max = conditional(gt(self.lmbda_c_tilde, self.lmbda_c_tilde_max), self.lmbda_c_tilde, self.lmbda_c_tilde_max)
+        # local_project(self.lmbda_c_tilde_max, self.V_lmbda_c_tilde_max_val, self.lmbda_c_tilde_max_val)
+        print0(peval(self.lmbda_c_tilde_max, self.meshpoints_list[0]))
+        print0(peval(self.lmbda_c_tilde_max, self.meshpoints_list[1]))
+        # update the gradient activity to account for the decreasing
+        # non-local interaction for increasing non-local damage
+        # self.g = project(self.g_ufl_fenics_mesh_func(), self.V_CG_scalar)
+        D_c_val = self.D_c_ufl_fenics_mesh_func()
+        local_project(D_c_val, self.V_DG_scalar, self.D_c_val)
+        print0(peval(self.D_c_val, self.meshpoints_list[0]))
+        print0(peval(self.D_c_val, self.meshpoints_list[1]))
+        # print0(peval(project(self.D_c_ufl_fenics_mesh_func(), self.V_DG_scalar), self.meshpoints_list[0]))
+
+        # # Below is the correct line of code to update g
+        # # self.g = self.g_ufl_fenics_mesh_func()
+        # # local_project(self.g, self.V_g_val, self.g_val)
+        self.g.vector()[:] = project(self.g_ufl_fenics_mesh_func(), self.V_g).vector()
+        # # local_project(self.g, self.V_DG_scalar, self.g_val)
+        # # print0(peval(self.g_val, self.meshpoints_list[0]))
+        print0(peval(self.g, self.meshpoints_list[0]))
+        print0(peval(self.g, self.meshpoints_list[1]))
+        
+        # update the normalized anisotropic interaction tensor to
+        # account for the shape, size, and orientation of non-local
+        # interactions at the microscale of the deformed polymer network
+        # self.H_tilde = project(self.H_tilde_ufl_fenics_mesh_func(), self.V_DG_tensor)
+        # local_project(self.H_tilde_ufl_fenics_mesh_func(), self.V_DG_tensor, self.H_tilde)
+        
+        # Figure out how to update H_tilde later
     
     def solve_u(self):
         """
@@ -933,7 +1455,14 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
         Solve the bounded non-local chain stretch problem
         """
         print0("Non-local chain stretch problem")
-        (iter, converged) = self.solver_bounded_lmbda_c_tilde.solve(NonLocalChainStretchProblem(self.Pi_tot, self.WF_lmbda_c_tilde, self.Jac_lmbda_c_tilde, self.lmbda_c_tilde, self.bc_lmbda_c_tilde), self.lmbda_c_tilde.vector(), self.lmbda_c_tilde_lb.vector(), self.lmbda_c_tilde_ub.vector())
+        (iter, converged) = self.solver_bounded_lmbda_c_tilde.solve()
+    
+    def solve_unbounded_lmbda_c_tilde(self):
+        """
+        Solve the unbounded non-local chain stretch problem
+        """
+        print0("Non-local chain stretch problem")
+        (iter, converged) = self.solver_unbounded_lmbda_c_tilde.solve()
     
     def post_processing(self):
         """
@@ -1054,6 +1583,83 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
                     MPI.barrier(MPI.comm_world)
                     self.lmbda_nu_tilde_chunks_val[meshpoint_indx][nu_chunk_indx] = peval(self.lmbda_nu_tilde_val, self.meshpoints_list[meshpoint_indx])
             self.lmbda_nu_tilde_chunks.append(deepcopy(self.lmbda_nu_tilde_chunks_val))
+        
+        # print0("Begin save_lmbda_c_tilde_max_mesh")
+
+        # if ppp["save_lmbda_c_tilde_max_mesh"]:
+        #     # local_project(self.lmbda_c_tilde_max, self.V_DG_scalar, self.lmbda_c_tilde_max_val)
+        #     # self.lmbda_c_tilde_max_val = project(self.lmbda_c_tilde_max, self.V_CG_scalar)
+        #     self.lmbda_c_tilde_max_val.rename("Maximal non-local chain stretch", "lmbda_c_tilde_max")
+        #     self.file_results.write(self.lmbda_c_tilde_max_val, self.t_val)
+        
+        # print0("Finished save_lmbda_c_tilde_max_mesh")
+        # print0("Begin save_lmbda_c_tilde_max_chunks")
+        
+        # if ppp["save_lmbda_c_tilde_max_chunks"]:
+        #     # local_project(self.lmbda_c_tilde_max, self.V_DG_scalar, self.lmbda_c_tilde_max_val)
+        #     # self.lmbda_c_tilde_max_val = project(self.lmbda_c_tilde_max, self.V_CG_scalar)
+        #     for meshpoint_indx in range(self.meshpoint_num):
+        #         MPI.barrier(MPI.comm_world)
+        #         self.lmbda_c_tilde_max_chunks_val[meshpoint_indx] = peval(self.lmbda_c_tilde_max_val, self.meshpoints_list[meshpoint_indx])
+        #     self.lmbda_c_tilde_max_chunks.append(deepcopy(self.lmbda_c_tilde_max_chunks_val))
+        
+        # print0("Finished save_lmbda_c_tilde_max_chunks")
+
+        if ppp["save_lmbda_c_tilde_max_mesh"]:
+            self.lmbda_c_tilde_max.rename("Maximal non-local chain stretch", "lmbda_c_tilde_max")
+            self.file_results.write(self.lmbda_c_tilde_max, self.t_val)
+        
+        if ppp["save_lmbda_c_tilde_max_chunks"]:
+            for meshpoint_indx in range(self.meshpoint_num):
+                MPI.barrier(MPI.comm_world)
+                self.lmbda_c_tilde_max_chunks_val[meshpoint_indx] = peval(self.lmbda_c_tilde_max, self.meshpoints_list[meshpoint_indx])
+            self.lmbda_c_tilde_max_chunks.append(deepcopy(self.lmbda_c_tilde_max_chunks_val))
+        
+        if ppp["save_lmbda_c_eq_tilde_max_mesh"]:
+            for nu_chunk_indx in range(self.nu_chunks_num):
+                nu_indx = self.nu_chunks_indx_in_nu_list[nu_chunk_indx]
+                lmbda_c_eq_tilde_max___nu_chunk_val = self.lmbda_c_eq_tilde_max_ufl_fenics_mesh_func(nu_indx)
+                local_project(lmbda_c_eq_tilde_max___nu_chunk_val, self.V_DG_scalar, self.lmbda_c_eq_tilde_max_val)
+
+                nu_str = str(self.nu_list[nu_indx])
+                name_str = "Maximal non-local equilibrium chain stretch nu = " + nu_str
+                prmtr_str = "lmbda_c_eq_tilde_max nu = " + nu_str
+
+                self.lmbda_c_eq_tilde_max_val.rename(name_str, prmtr_str)
+                self.file_results.write(self.lmbda_c_eq_tilde_max_val, self.t_val)
+        
+        if ppp["save_lmbda_c_eq_tilde_max_chunks"]:
+            for meshpoint_indx in range(self.meshpoint_num):
+                for nu_chunk_indx in range(self.nu_chunks_num):
+                    nu_indx = self.nu_chunks_indx_in_nu_list[nu_chunk_indx]
+                    lmbda_c_eq_tilde_max___nu_chunk_val = self.lmbda_c_eq_tilde_max_ufl_fenics_mesh_func(nu_indx)
+                    local_project(lmbda_c_eq_tilde_max___nu_chunk_val, self.V_DG_scalar, self.lmbda_c_eq_tilde_max_val)
+                    MPI.barrier(MPI.comm_world)
+                    self.lmbda_c_eq_tilde_max_chunks_val[meshpoint_indx][nu_chunk_indx] = peval(self.lmbda_c_eq_tilde_max_val, self.meshpoints_list[meshpoint_indx])
+            self.lmbda_c_eq_tilde_max_chunks.append(deepcopy(self.lmbda_c_eq_tilde_max_chunks_val))
+        
+        if ppp["save_lmbda_nu_tilde_max_mesh"]:
+            for nu_chunk_indx in range(self.nu_chunks_num):
+                nu_indx = self.nu_chunks_indx_in_nu_list[nu_chunk_indx]
+                lmbda_nu_tilde_max___nu_chunk_val = self.lmbda_nu_tilde_max_ufl_fenics_mesh_func(nu_indx)
+                local_project(lmbda_nu_tilde_max___nu_chunk_val, self.V_DG_scalar, self.lmbda_nu_tilde_max_val)
+
+                nu_str = str(self.nu_list[nu_indx])
+                name_str = "Maximal non-local segment stretch nu = " + nu_str
+                prmtr_str = "lmbda_nu_tilde_max nu = " + nu_str
+
+                self.lmbda_nu_tilde_max_val.rename(name_str, prmtr_str)
+                self.file_results.write(self.lmbda_nu_tilde_max_val, self.t_val)
+        
+        if ppp["save_lmbda_nu_tilde_max_chunks"]:
+            for meshpoint_indx in range(self.meshpoint_num):
+                for nu_chunk_indx in range(self.nu_chunks_num):
+                    nu_indx = self.nu_chunks_indx_in_nu_list[nu_chunk_indx]
+                    lmbda_nu_tilde_max___nu_chunk_val = self.lmbda_nu_tilde_max_ufl_fenics_mesh_func(nu_indx)
+                    local_project(lmbda_nu_tilde_max___nu_chunk_val, self.V_DG_scalar, self.lmbda_nu_tilde_max_val)
+                    MPI.barrier(MPI.comm_world)
+                    self.lmbda_nu_tilde_max_chunks_val[meshpoint_indx][nu_chunk_indx] = peval(self.lmbda_nu_tilde_max_val, self.meshpoints_list[meshpoint_indx])
+            self.lmbda_nu_tilde_max_chunks.append(deepcopy(self.lmbda_nu_tilde_max_chunks_val))
         
         # # print0("Begin save_g_mesh")
         
@@ -1334,21 +1940,21 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
             sys.exit(error_message)
 
         if ppp["save_sigma_mesh"]:
-            sigma_mm_chunk_val = self.cauchy_stress_mm_ufl_fenics_mesh_func()
-            sigma_nl_chunk_val = self.cauchy_stress_nl_ufl_fenics_mesh_func()
-            sigma_nc_chunk_val = self.cauchy_stress_nc_ufl_fenics_mesh_func()
+            sigma_chunk_val = self.cauchy_stress_ufl_fenics_mesh_func()
+            sigma_penalty_term_chunk_val = self.cauchy_stress_penalty_term_ufl_fenics_mesh_func()
+            sigma_less_penalty_term_chunk_val = sigma_chunk_val - sigma_penalty_term_chunk_val
 
-            local_project(sigma_mm_chunk_val, self.V_DG_tensor, self.sigma_mm_val)
-            local_project(sigma_nl_chunk_val, self.V_DG_tensor, self.sigma_nl_val)
-            local_project(sigma_nc_chunk_val, self.V_DG_tensor, self.sigma_nc_val)
+            local_project(sigma_chunk_val, self.V_DG_tensor, self.sigma_val)
+            local_project(sigma_penalty_term_chunk_val, self.V_DG_tensor, self.sigma_penalty_term_val)
+            local_project(sigma_less_penalty_term_chunk_val, self.V_DG_tensor, self.sigma_less_penalty_term_val)
 
-            self.sigma_mm_val.rename("Normalized micromechanical Cauchy stress", "sigma_mm")
-            self.sigma_nl_val.rename("Normalized non-local Cauchy stress", "sigma_nl")
-            self.sigma_nc_val.rename("Normalized near incompressibility penalty Cauchy stress", "sigma_nc")
+            self.sigma_val.rename("Normalized Cauchy stress", "sigma")
+            self.sigma_penalty_term_val.rename("Normalized Cauchy stress penalty term", "sigma penalty term")
+            self.sigma_less_penalty_term_val.rename("Normalized Cauchy stress less penalty term", "sigma less penalty term")
 
-            self.file_results.write(self.sigma_mm_val, self.t_val)
-            self.file_results.write(self.sigma_nl_val, self.t_val)
-            self.file_results.write(self.sigma_nc_val, self.t_val)
+            self.file_results.write(self.sigma_val, self.t_val)
+            self.file_results.write(self.sigma_penalty_term_val, self.t_val)
+            self.file_results.write(self.sigma_less_penalty_term_val, self.t_val)
         
         if ppp["save_sigma_chunks"]:
             # self.sigma_chunks_post_processing()
@@ -1376,23 +1982,23 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
         self.F_11_chunks.append(deepcopy(self.F_11_chunks_val))
     
     def sigma_chunks_post_processing(self):
-        sigma_mm_val = self.cauchy_stress_mm_ufl_fenics_mesh_func()
-        sigma_nl_val = self.cauchy_stress_nl_ufl_fenics_mesh_func()
-        sigma_nc_val = self.cauchy_stress_nc_ufl_fenics_mesh_func()
-        sigma_mm_val = project(sigma_mm_val, self.V_DG_tensor)
-        sigma_nl_val = project(sigma_nl_val, self.V_DG_tensor)
-        sigma_nc_val = project(sigma_nc_val, self.V_DG_tensor)
+        sigma_val = self.cauchy_stress_ufl_fenics_mesh_func()
+        sigma_penalty_term_val = self.cauchy_stress_penalty_term_ufl_fenics_mesh_func()
+        sigma_less_penalty_term_val = sigma_val - sigma_penalty_term_val
+        sigma_val = project(sigma_val, self.V_DG_tensor)
+        sigma_penalty_term_val = project(sigma_penalty_term_val, self.V_DG_tensor)
+        sigma_less_penalty_term_val = project(sigma_less_penalty_term_val, self.V_DG_tensor)
         for meshpoint_indx in range(self.meshpoint_num):
             MPI.barrier(MPI.comm_world)
-            sigma_mm_chunks_val = peval(sigma_mm_val, self.meshpoints_list[meshpoint_indx])
-            sigma_nl_chunks_val = peval(sigma_nl_val, self.meshpoints_list[meshpoint_indx])
-            sigma_nc_chunks_val = peval(sigma_nc_val, self.meshpoints_list[meshpoint_indx])
-            self.sigma_mm_11_chunks_val[meshpoint_indx] = sigma_mm_chunks_val[self.two_dim_tensor2voigt_vector_indx_dict["11"]]
-            self.sigma_nl_11_chunks_val[meshpoint_indx] = sigma_nl_chunks_val[self.two_dim_tensor2voigt_vector_indx_dict["11"]]
-            self.sigma_nc_11_chunks_val[meshpoint_indx] = sigma_nc_chunks_val[self.two_dim_tensor2voigt_vector_indx_dict["11"]]
-        self.sigma_mm_11_chunks.append(deepcopy(self.sigma_mm_11_chunks_val))
-        self.sigma_nl_11_chunks.append(deepcopy(self.sigma_nl_11_chunks_val))
-        self.sigma_nc_11_chunks.append(deepcopy(self.sigma_nc_11_chunks_val))
+            sigma_chunks_val = peval(sigma_val, self.meshpoints_list[meshpoint_indx])
+            sigma_penalty_term_chunks_val = peval(sigma_penalty_term_val, self.meshpoints_list[meshpoint_indx])
+            sigma_less_penalty_term_chunks_val = peval(sigma_less_penalty_term_val, self.meshpoints_list[meshpoint_indx])
+            self.sigma_11_chunks_val[meshpoint_indx] = sigma_chunks_val[self.two_dim_tensor2voigt_vector_indx_dict["11"]]
+            self.sigma_11_penalty_term_chunks_val[meshpoint_indx] = sigma_penalty_term_chunks_val[self.two_dim_tensor2voigt_vector_indx_dict["11"]]
+            self.sigma_11_less_penalty_term_chunks_val[meshpoint_indx] = sigma_less_penalty_term_chunks_val[self.two_dim_tensor2voigt_vector_indx_dict["11"]]
+        self.sigma_11_chunks.append(deepcopy(self.sigma_11_chunks_val))
+        self.sigma_11_penalty_term_chunks.append(deepcopy(self.sigma_11_penalty_term_chunks_val))
+        self.sigma_11_less_penalty_term_chunks.append(deepcopy(self.sigma_11_less_penalty_term_chunks_val))
 
     def user_post_processing(self):
         """
@@ -1411,76 +2017,14 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
         Plot the chunked results from the evolution problem
         """
         pass
-
-    def first_pk_stress2cauchy_stress_map_func(self, first_pk_stress):
+    
+    def first_pk_stress_ufl_fenics_mesh_func(self):
         """
-        Mapping from first Piola-Kirchhoff stress tensor to Cauchy
-        stress tensor
-        """
-        return first_pk_stress / self.J * self.F.T
-
-    def psi_mm_ufl_fenics_mesh_func(self):
-        """
-        Nondimensional micromechanical Helmholtz free energy
+        Nondimensional first Piola-Kirchhoff stress tensor
         """
         network = self.material
-        
-        psi_mm_val = Constant(0.0)
-        for nu_indx in range(self.nu_num):
-            nu_val = network.nu_list[nu_indx]
-            P_nu___nu_val = network.P_nu_list[nu_indx]
-            A_nu___nu_val = network.A_nu_list[nu_indx]
-            lmbda_c_eq___nu_val = self.lmbda_c*A_nu___nu_val
-            lmbda_nu___nu_val = network.composite_ufjc_ufl_fenics_list[nu_indx].lmbda_nu_ufl_fenics_func(lmbda_c_eq___nu_val)
-            psi_cnu___nu_val = network.composite_ufjc_ufl_fenics_list[nu_indx].psi_cnu_ufl_fenics_func(lmbda_nu___nu_val, lmbda_c_eq___nu_val)
-            psi_c___nu_val = nu_val * psi_cnu___nu_val
-            upsilon_c___nu_val = self.upsilon_c_ufl_fenics_mesh_func(nu_indx)
-            psi_mm_val += upsilon_c___nu_val * P_nu___nu_val * nu_val * psi_c___nu_val
-        
-        return psi_mm_val
 
-    def psi_nl_ufl_fenics_mesh_func(self):
-        """
-        Nondimensional non-local Helmholtz free energy
-        """
-        mp = self.parameters["material"]
-        
-        psi_nl_val = (
-            0.5 * mp["h_nl"] * (self.lmbda_c-self.lmbda_c_tilde)**2
-            + 0.5 * mp["h_nl"] * mp["l_nl"]**2 * self.g * dot(grad(self.lmbda_c_tilde), self.H_tilde*grad(self.lmbda_c_tilde))
-        )
-        
-        return psi_nl_val
-
-    def psi_nc_ufl_fenics_mesh_func(self):
-        """
-        Nondimensional Helmholtz free energy associated with a penalty
-        of near incompressibility in the network
-        """
-        dp = self.parameters["deformation"]
-        
-        psi_nc_val = 0.5 * self.Upsilon_c_cubed_ufl_fenics_mesh_func() * dp["K__G"] * (self.J-1)**2
-        
-        return psi_nc_val
-
-    def psi_tot_ufl_fenics_mesh_func(self):
-        """
-        Nondimensional total Helmholtz free energy
-        """
-        return (
-            self.psi_mm_ufl_fenics_mesh_func()
-            + self.psi_nl_ufl_fenics_mesh_func()
-            + self.psi_nc_ufl_fenics_mesh_func()
-        )
-
-    def first_pk_stress_mm_ufl_fenics_mesh_func(self):
-        """
-        Nondimensional micromechanical first Piola-Kirchhoff stress
-        tensor
-        """
-        network = self.material
-        
-        first_pk_stress_mm_val = Constant(0.0)*self.I
+        first_pk_stress_val = Constant(0.0)*self.I
         for nu_indx in range(self.nu_num):
             nu_val = network.nu_list[nu_indx]
             P_nu___nu_val = network.P_nu_list[nu_indx]
@@ -1489,62 +2033,31 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
             lmbda_nu___nu_val = network.composite_ufjc_ufl_fenics_list[nu_indx].lmbda_nu_ufl_fenics_func(lmbda_c_eq___nu_val)
             xi_c___nu_val = network.composite_ufjc_ufl_fenics_list[nu_indx].xi_c_ufl_fenics_func(lmbda_nu___nu_val, lmbda_c_eq___nu_val)
             upsilon_c___nu_val = self.upsilon_c_ufl_fenics_mesh_func(nu_indx)
-            first_pk_stress_mm_val += upsilon_c___nu_val * P_nu___nu_val * nu_val * A_nu___nu_val * xi_c___nu_val / (3.*self.lmbda_c) * self.F
-        
-        return first_pk_stress_mm_val
-
-    def first_pk_stress_nl_ufl_fenics_mesh_func(self):
+            first_pk_stress_val += upsilon_c___nu_val*P_nu___nu_val*nu_val*A_nu___nu_val*xi_c___nu_val/(3.*self.lmbda_c)*self.F
+        first_pk_stress_val += self.first_pk_stress_penalty_term_ufl_fenics_mesh_func()
+        return first_pk_stress_val
+    
+    def first_pk_stress_penalty_term_ufl_fenics_mesh_func(self):
         """
-        Nondimensional non-local first Piola-Kirchhoff stress tensor
-        """
-        mp = self.parameters["material"]
-        
-        return mp["h_nl"] * (self.lmbda_c-self.lmbda_c_tilde) / (3.*self.lmbda_c) * self.F
-
-    def first_pk_stress_nc_ufl_fenics_mesh_func(self):
-        """
-        Nondimensional first Piola-Kirchhoff stress tensor associated
-        with a penalty of near incompressibility in the network
+        Penalty term associated with near-incompressibility in the
+        nondimensional first Piola-Kirchhoff stress tensor
         """
         dp = self.parameters["deformation"]
-        
-        return self.Upsilon_c_cubed_ufl_fenics_mesh_func() * dp["K__G"] * (self.J-1) * self.J * self.F_inv.T
+        return self.Upsilon_c_cubed_ufl_fenics_mesh_func()*dp["K__G"]*(self.J-1)*self.J*self.F_inv.T
 
-    def first_pk_stress_tot_ufl_fenics_mesh_func(self):
+    def cauchy_stress_ufl_fenics_mesh_func(self):
         """
-        Nondimensional total first Piola-Kirchhoff stress tensor
+        Nondimensional Cauchy stress tensor
         """
-        return (
-            self.first_pk_stress_mm_ufl_fenics_mesh_func()
-            + self.first_pk_stress_nl_ufl_fenics_mesh_func()
-            + self.first_pk_stress_nc_ufl_fenics_mesh_func()
-        )
-
-    def cauchy_stress_mm_ufl_fenics_mesh_func(self):
+        return self.first_pk_stress_ufl_fenics_mesh_func()/self.J*self.F.T
+    
+    def cauchy_stress_penalty_term_ufl_fenics_mesh_func(self):
         """
-        Nondimensional micromechanical Cauchy stress tensor
+        Penalty term associated with near-incompressibility in the
+        nondimensional Cauchy stress tensor
         """
-        return self.first_pk_stress2cauchy_stress_map_func(self.first_pk_stress_mm_ufl_fenics_mesh_func())
-
-    def cauchy_stress_nl_ufl_fenics_mesh_func(self):
-        """
-        Nondimensional non-local Cauchy stress tensor
-        """
-        return self.first_pk_stress2cauchy_stress_map_func(self.first_pk_stress_nl_ufl_fenics_mesh_func())
-
-    def cauchy_stress_nc_ufl_fenics_mesh_func(self):
-        """
-        Nondimensional Cauchy stress tensor associated with a penalty of
-        near incompressibility in the network
-        """
-        return self.first_pk_stress2cauchy_stress_map_func(self.first_pk_stress_nc_ufl_fenics_mesh_func())
-
-    def cauchy_stress_tot_ufl_fenics_mesh_func(self):
-        """
-        Nondimensional total Cauchy stress tensor
-        """
-        return self.first_pk_stress2cauchy_stress_map_func(self.first_pk_stress_tot_ufl_fenics_mesh_func())
-
+        return self.first_pk_stress_penalty_term_ufl_fenics_mesh_func()/self.J*self.F.T
+    
     def lmbda_c_eq_tilde_ufl_fenics_mesh_func(self, nu_indx):
         """
         Non-local equilibrium chain stretch for chains with a particular
@@ -1567,13 +2080,39 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
         lmbda_nu_tilde___nu_val = network.composite_ufjc_ufl_fenics_list[nu_indx].lmbda_nu_ufl_fenics_func(lmbda_c_eq_tilde___nu_val)
         return lmbda_nu_tilde___nu_val
     
+    def lmbda_c_eq_tilde_max_ufl_fenics_mesh_func(self, nu_indx):
+        """
+        Maximum non-local equilibrium chain stretch for chains with a
+        particular segment number
+        """
+        network = self.material
+
+        A_nu___nu_val = network.A_nu_list[nu_indx]
+        lmbda_c_eq_tilde_max___nu_val = self.lmbda_c_tilde_max*A_nu___nu_val
+        return lmbda_c_eq_tilde_max___nu_val
+    
+    def lmbda_nu_tilde_max_ufl_fenics_mesh_func(self, nu_indx):
+        """
+        Maximum non-local segment stretch for chains with a particular
+        segment number
+        """
+        network = self.material
+
+        lmbda_c_eq_tilde_max___nu_val = self.lmbda_c_eq_tilde_max_ufl_fenics_mesh_func(nu_indx)
+        lmbda_nu_tilde_max___nu_val = network.composite_ufjc_ufl_fenics_list[nu_indx].lmbda_nu_ufl_fenics_func(lmbda_c_eq_tilde_max___nu_val)
+        return lmbda_nu_tilde_max___nu_val
+    
     def upsilon_c_ufl_fenics_mesh_func(self, nu_indx):
         """
         Chain degradation for chains with a particular segment number
         """
         dp = self.parameters["deformation"]
 
-        upsilon_c_val = (1.-dp["k_cond_val"])*(1.-self.d_c_ufl_fenics_mesh_func(nu_indx)) + dp["k_cond_val"]
+        # upsilon_c_val = (1.-dp["k_cond_val"])*(1.-self.d_c_ufl_fenics_mesh_func(nu_indx)) + dp["k_cond_val"]
+        # upsilon_c_val = (1.-dp["k_cond_val"])*(1.-self.d_c_ufl_fenics_mesh_func(nu_indx))**2 + dp["k_cond_val"]
+        d_c_val = self.d_c_ufl_fenics_mesh_func(nu_indx)
+        A_val = (1.-d_c_val)**2 / (1.+d_c_val+4.*d_c_val**2)
+        upsilon_c_val = (1.-dp["k_cond_val"])*A_val + dp["k_cond_val"]
         upsilon_c_val = conditional(lt(upsilon_c_val, 0.0), 0.0, upsilon_c_val)
         return upsilon_c_val
     
@@ -1582,19 +2121,19 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
         Chain damage for chains with a particular segment number
         """
         mp = self.parameters["material"]
-        lmbda_nu_tilde___nu_val = self.lmbda_nu_tilde_ufl_fenics_mesh_func(nu_indx)
-        x = (lmbda_nu_tilde___nu_val-mp["d_c_lmbda_nu_crit_min"])/(mp["d_c_lmbda_nu_crit_max"]-mp["d_c_lmbda_nu_crit_min"])
-        d_c_val = 3 * x**2 - 2 * x**3
-        # d_c_val = 70 * x**9 - 315 * x**8 + 540 * x**7 - 420 * x**6 + 126 * x**5
-        d_c_val = conditional(gt(lmbda_nu_tilde___nu_val, mp["d_c_lmbda_nu_crit_min"]), d_c_val, 0.)
-        d_c_val = conditional(lt(lmbda_nu_tilde___nu_val, mp["d_c_lmbda_nu_crit_max"]), d_c_val, 1.)
+        lmbda_nu_tilde_max___nu_val = self.lmbda_nu_tilde_max_ufl_fenics_mesh_func(nu_indx)
+        x = (lmbda_nu_tilde_max___nu_val-mp["d_c_lmbda_nu_crit_min"])/(mp["d_c_lmbda_nu_crit_max"]-mp["d_c_lmbda_nu_crit_min"])
+        # d_c_val = 3 * x**2 - 2 * x**3
+        d_c_val = 70 * x**9 - 315 * x**8 + 540 * x**7 - 420 * x**6 + 126 * x**5
+        d_c_val = conditional(gt(lmbda_nu_tilde_max___nu_val, mp["d_c_lmbda_nu_crit_min"]), d_c_val, 0.)
+        d_c_val = conditional(lt(lmbda_nu_tilde_max___nu_val, mp["d_c_lmbda_nu_crit_max"]), d_c_val, 1.)
         return d_c_val
         # tau = Constant(2700)
-        # lmbda_nu_tilde_crit = Constant(1.003)
-        # lmbda_nu_tilde___nu_val = self.lmbda_nu_tilde_ufl_fenics_mesh_func(nu_indx)
-        # d_c_val = 1. - sqrt(1.-1./(1.+exp(-tau*(lmbda_nu_tilde___nu_val-lmbda_nu_tilde_crit))))
-        # d_c_val = conditional(gt(lmbda_nu_tilde___nu_val, mp["d_c_lmbda_nu_crit_min"]), d_c_val, 0.)
-        # d_c_val = conditional(lt(lmbda_nu_tilde___nu_val, mp["d_c_lmbda_nu_crit_max"]), d_c_val, 1.)
+        # lmbda_nu_tilde_max_crit = Constant(1.003)
+        # lmbda_nu_tilde_max___nu_val = self.lmbda_nu_tilde_max_ufl_fenics_mesh_func(nu_indx)
+        # d_c_val = 1. - sqrt(1.-1./(1.+exp(-tau*(lmbda_nu_tilde_max___nu_val-lmbda_nu_tilde_max_crit))))
+        # d_c_val = conditional(gt(lmbda_nu_tilde_max___nu_val, mp["d_c_lmbda_nu_crit_min"]), d_c_val, 0.)
+        # d_c_val = conditional(lt(lmbda_nu_tilde_max___nu_val, mp["d_c_lmbda_nu_crit_max"]), d_c_val, 1.)
         # return d_c_val
     
     def Upsilon_c_ufl_fenics_mesh_func(self):
@@ -1709,8 +2248,8 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
         """
         network = self.material
 
-        lmbda_nu_tilde___nu_val = self.lmbda_nu_tilde_ufl_fenics_mesh_func(nu_indx)
-        epsilon_cnu_diss_hat___nu_val = network.composite_ufjc_ufl_fenics_list[nu_indx].epsilon_cnu_diss_hat_equiv_ufl_fenics_func(lmbda_nu_tilde___nu_val)
+        lmbda_nu_tilde_max___nu_val = self.lmbda_nu_tilde_max_ufl_fenics_mesh_func(nu_indx)
+        epsilon_cnu_diss_hat___nu_val = network.composite_ufjc_ufl_fenics_list[nu_indx].epsilon_cnu_diss_hat_equiv_ufl_fenics_func(lmbda_nu_tilde_max___nu_val)
         return epsilon_cnu_diss_hat___nu_val
     
     def epsilon_c_diss_hat_ufl_fenics_mesh_func(self, nu_indx):
