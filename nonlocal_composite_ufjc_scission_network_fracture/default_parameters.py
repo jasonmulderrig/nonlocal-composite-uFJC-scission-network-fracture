@@ -149,6 +149,9 @@ def default_material_parameters():
     # Non-local interaction length scale
     material.add("l_nl", 0.01)
 
+    # Interaction intensity
+    material.add("n", 1)
+
     # Define the chain segment number statistics in the network
     material.add("nu_distribution", "itskov")
 
@@ -242,6 +245,7 @@ def default_deformation_parameters():
     deformation.add("itrtn_max_lmbda_c_tilde_val", 1000)
     deformation.add("tol_lmbda_c_tilde_val", 1e-4)
     deformation.add("k_cond_val", 1e-4)
+    deformation.add("k_g_cond_val", 1e-4)
 
     # timing parameters
     deformation.add("strain_rate", 0.1) # 1/sec

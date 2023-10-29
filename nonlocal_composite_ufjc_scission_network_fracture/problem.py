@@ -1213,6 +1213,22 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
             if self.t_indx in self.chunk_indx:
                 self.post_processing()
 
+            # # Post-processing hack to save memory-intensive stress tensor
+            # if self.t_indx == 0:
+            #     self.post_processing()
+            # elif self.t_indx == 1730:
+            #     self.post_processing()
+            # elif self.t_indx == 1740:
+            #     self.post_processing()
+            # elif self.t_indx == 1746:
+            #     self.post_processing()
+            # elif self.t_indx == 1748:
+            #     self.post_processing()
+            # elif self.t_indx == 1756:
+            #     self.post_processing()
+            # elif self.t_indx == 1760:
+            #     self.post_processing()
+
             # Force all parallelization to unify after post-processing
             # and before user-defined post-processing
             MPI.barrier(MPI.comm_world)
@@ -1415,25 +1431,32 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
         self.lmbda_c_tilde_max.vector()[:] = project(conditional(gt(self.lmbda_c_tilde, self.lmbda_c_tilde_max), self.lmbda_c_tilde, self.lmbda_c_tilde_max), self.V_lmbda_c_tilde_max).vector()
         # self.lmbda_c_tilde_max = conditional(gt(self.lmbda_c_tilde, self.lmbda_c_tilde_max), self.lmbda_c_tilde, self.lmbda_c_tilde_max)
         # local_project(self.lmbda_c_tilde_max, self.V_lmbda_c_tilde_max_val, self.lmbda_c_tilde_max_val)
-        print0(peval(self.lmbda_c_tilde_max, self.meshpoints_list[0]))
-        print0(peval(self.lmbda_c_tilde_max, self.meshpoints_list[1]))
+        
+        # print0(peval(self.lmbda_c_tilde_max, self.meshpoints_list[0]))
+        # print0(peval(self.lmbda_c_tilde_max, self.meshpoints_list[1]))
+        
         # update the gradient activity to account for the decreasing
         # non-local interaction for increasing non-local damage
         # self.g = project(self.g_ufl_fenics_mesh_func(), self.V_CG_scalar)
-        D_c_val = self.D_c_ufl_fenics_mesh_func()
-        local_project(D_c_val, self.V_DG_scalar, self.D_c_val)
-        print0(peval(self.D_c_val, self.meshpoints_list[0]))
-        print0(peval(self.D_c_val, self.meshpoints_list[1]))
+
+        # D_c_val = self.D_c_ufl_fenics_mesh_func()
+        # local_project(D_c_val, self.V_DG_scalar, self.D_c_val)
+        # print0(peval(self.D_c_val, self.meshpoints_list[0]))
+        # print0(peval(self.D_c_val, self.meshpoints_list[1]))
+
         # print0(peval(project(self.D_c_ufl_fenics_mesh_func(), self.V_DG_scalar), self.meshpoints_list[0]))
 
         # # Below is the correct line of code to update g
         # # self.g = self.g_ufl_fenics_mesh_func()
         # # local_project(self.g, self.V_g_val, self.g_val)
+        
         self.g.vector()[:] = project(self.g_ufl_fenics_mesh_func(), self.V_g).vector()
+        
         # # local_project(self.g, self.V_DG_scalar, self.g_val)
         # # print0(peval(self.g_val, self.meshpoints_list[0]))
-        print0(peval(self.g, self.meshpoints_list[0]))
-        print0(peval(self.g, self.meshpoints_list[1]))
+       
+        # print0(peval(self.g, self.meshpoints_list[0]))
+        # print0(peval(self.g, self.meshpoints_list[1]))
         
         # update the normalized anisotropic interaction tensor to
         # account for the shape, size, and orientation of non-local
@@ -1473,7 +1496,8 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
         if ppp["save_lmbda_c_mesh"]:
             local_project(self.lmbda_c, self.V_DG_scalar, self.lmbda_c_val)
             self.lmbda_c_val.rename("Chain stretch", "lmbda_c")
-            self.file_results.write(self.lmbda_c_val, self.t_val)
+            # self.file_results.write(self.lmbda_c_val, self.t_val)
+            self.file_results.write(self.lmbda_c_val, self.t_val, encoding=XDMFFile.Encoding.ASCII)
         
         if ppp["save_lmbda_c_chunks"]:
             local_project(self.lmbda_c, self.V_DG_scalar, self.lmbda_c_val)
@@ -1493,7 +1517,8 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
                 prmtr_str = "lmbda_c_eq nu = " + nu_str
 
                 self.lmbda_c_eq_val.rename(name_str, prmtr_str)
-                self.file_results.write(self.lmbda_c_eq_val, self.t_val)
+                # self.file_results.write(self.lmbda_c_eq_val, self.t_val)
+                self.file_results.write(self.lmbda_c_eq_val, self.t_val, encoding=XDMFFile.Encoding.ASCII)
         
         if ppp["save_lmbda_c_eq_chunks"]:
             for meshpoint_indx in range(self.meshpoint_num):
@@ -1516,7 +1541,8 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
                 prmtr_str = "lmbda_nu nu = " + nu_str
 
                 self.lmbda_nu_val.rename(name_str, prmtr_str)
-                self.file_results.write(self.lmbda_nu_val, self.t_val)
+                # self.file_results.write(self.lmbda_nu_val, self.t_val)
+                self.file_results.write(self.lmbda_nu_val, self.t_val, encoding=XDMFFile.Encoding.ASCII)
         
         if ppp["save_lmbda_nu_chunks"]:
             for meshpoint_indx in range(self.meshpoint_num):
@@ -1530,7 +1556,8 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
         
         if ppp["save_lmbda_c_tilde_mesh"]:
             self.lmbda_c_tilde.rename("Non-local chain stretch", "lmbda_c_tilde")
-            self.file_results.write(self.lmbda_c_tilde, self.t_val)
+            # self.file_results.write(self.lmbda_c_tilde, self.t_val)
+            self.file_results.write(self.lmbda_c_tilde, self.t_val, encoding=XDMFFile.Encoding.ASCII)
         
         if ppp["save_lmbda_c_tilde_chunks"]:
             for meshpoint_indx in range(self.meshpoint_num):
@@ -1549,7 +1576,8 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
                 prmtr_str = "lmbda_c_eq_tilde nu = " + nu_str
 
                 self.lmbda_c_eq_tilde_val.rename(name_str, prmtr_str)
-                self.file_results.write(self.lmbda_c_eq_tilde_val, self.t_val)
+                # self.file_results.write(self.lmbda_c_eq_tilde_val, self.t_val)
+                self.file_results.write(self.lmbda_c_eq_tilde_val, self.t_val, encoding=XDMFFile.Encoding.ASCII)
         
         if ppp["save_lmbda_c_eq_tilde_chunks"]:
             for meshpoint_indx in range(self.meshpoint_num):
@@ -1572,7 +1600,8 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
                 prmtr_str = "lmbda_nu_tilde nu = " + nu_str
 
                 self.lmbda_nu_tilde_val.rename(name_str, prmtr_str)
-                self.file_results.write(self.lmbda_nu_tilde_val, self.t_val)
+                # self.file_results.write(self.lmbda_nu_tilde_val, self.t_val)
+                self.file_results.write(self.lmbda_nu_tilde_val, self.t_val, encoding=XDMFFile.Encoding.ASCII)
         
         if ppp["save_lmbda_nu_tilde_chunks"]:
             for meshpoint_indx in range(self.meshpoint_num):
@@ -1607,7 +1636,8 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
 
         if ppp["save_lmbda_c_tilde_max_mesh"]:
             self.lmbda_c_tilde_max.rename("Maximal non-local chain stretch", "lmbda_c_tilde_max")
-            self.file_results.write(self.lmbda_c_tilde_max, self.t_val)
+            # self.file_results.write(self.lmbda_c_tilde_max, self.t_val)
+            self.file_results.write(self.lmbda_c_tilde_max, self.t_val, encoding=XDMFFile.Encoding.ASCII)
         
         if ppp["save_lmbda_c_tilde_max_chunks"]:
             for meshpoint_indx in range(self.meshpoint_num):
@@ -1626,7 +1656,8 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
                 prmtr_str = "lmbda_c_eq_tilde_max nu = " + nu_str
 
                 self.lmbda_c_eq_tilde_max_val.rename(name_str, prmtr_str)
-                self.file_results.write(self.lmbda_c_eq_tilde_max_val, self.t_val)
+                # self.file_results.write(self.lmbda_c_eq_tilde_max_val, self.t_val)
+                self.file_results.write(self.lmbda_c_eq_tilde_max_val, self.t_val, encoding=XDMFFile.Encoding.ASCII)
         
         if ppp["save_lmbda_c_eq_tilde_max_chunks"]:
             for meshpoint_indx in range(self.meshpoint_num):
@@ -1649,7 +1680,8 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
                 prmtr_str = "lmbda_nu_tilde_max nu = " + nu_str
 
                 self.lmbda_nu_tilde_max_val.rename(name_str, prmtr_str)
-                self.file_results.write(self.lmbda_nu_tilde_max_val, self.t_val)
+                # self.file_results.write(self.lmbda_nu_tilde_max_val, self.t_val)
+                self.file_results.write(self.lmbda_nu_tilde_max_val, self.t_val, encoding=XDMFFile.Encoding.ASCII)
         
         if ppp["save_lmbda_nu_tilde_max_chunks"]:
             for meshpoint_indx in range(self.meshpoint_num):
@@ -1684,7 +1716,8 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
 
         if ppp["save_g_mesh"]:
             self.g.rename("Gradient activity", "g")
-            self.file_results.write(self.g, self.t_val)
+            # self.file_results.write(self.g, self.t_val)
+            self.file_results.write(self.g, self.t_val, encoding=XDMFFile.Encoding.ASCII)
         
         if ppp["save_g_chunks"]:
             for meshpoint_indx in range(self.meshpoint_num):
@@ -1703,7 +1736,8 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
                 prmtr_str = "upsilon_c nu = " + nu_str
 
                 self.upsilon_c_val.rename(name_str, prmtr_str)
-                self.file_results.write(self.upsilon_c_val, self.t_val)
+                # self.file_results.write(self.upsilon_c_val, self.t_val)
+                self.file_results.write(self.upsilon_c_val, self.t_val, encoding=XDMFFile.Encoding.ASCII)
         
         if ppp["save_upsilon_c_chunks"]:
             for meshpoint_indx in range(self.meshpoint_num):
@@ -1719,7 +1753,8 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
             Upsilon_c_chunk_val = self.Upsilon_c_ufl_fenics_mesh_func()
             local_project(Upsilon_c_chunk_val, self.V_DG_scalar, self.Upsilon_c_val)
             self.Upsilon_c_val.rename("Average chain survival", "Upsilon_c")
-            self.file_results.write(self.Upsilon_c_val, self.t_val)
+            # self.file_results.write(self.Upsilon_c_val, self.t_val)
+            self.file_results.write(self.Upsilon_c_val, self.t_val, encoding=XDMFFile.Encoding.ASCII)
         
         if ppp["save_Upsilon_c_chunks"]:
             Upsilon_c_chunk_val = self.Upsilon_c_ufl_fenics_mesh_func()
@@ -1740,7 +1775,8 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
                 prmtr_str = "d_c nu = " + nu_str
 
                 self.d_c_val.rename(name_str, prmtr_str)
-                self.file_results.write(self.d_c_val, self.t_val)
+                # self.file_results.write(self.d_c_val, self.t_val)
+                self.file_results.write(self.d_c_val, self.t_val, encoding=XDMFFile.Encoding.ASCII)
         
         if ppp["save_d_c_chunks"]:
             for meshpoint_indx in range(self.meshpoint_num):
@@ -1756,7 +1792,8 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
             D_c_chunk_val = self.D_c_ufl_fenics_mesh_func()
             local_project(D_c_chunk_val, self.V_DG_scalar, self.D_c_val)
             self.D_c_val.rename("Average chain damage", "D_c")
-            self.file_results.write(self.D_c_val, self.t_val)
+            # self.file_results.write(self.D_c_val, self.t_val)
+            self.file_results.write(self.D_c_val, self.t_val, encoding=XDMFFile.Encoding.ASCII)
         
         if ppp["save_D_c_chunks"]:
             D_c_chunk_val = self.D_c_ufl_fenics_mesh_func()
@@ -1777,7 +1814,8 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
                 prmtr_str = "epsilon_cnu_diss_hat nu = " + nu_str
 
                 self.epsilon_cnu_diss_hat_val.rename(name_str, prmtr_str)
-                self.file_results.write(self.epsilon_cnu_diss_hat_val, self.t_val)
+                # self.file_results.write(self.epsilon_cnu_diss_hat_val, self.t_val)
+                self.file_results.write(self.epsilon_cnu_diss_hat_val, self.t_val, encoding=XDMFFile.Encoding.ASCII)
         
         if ppp["save_epsilon_cnu_diss_hat_chunks"]:
             for meshpoint_indx in range(self.meshpoint_num):
@@ -1793,7 +1831,8 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
             Epsilon_cnu_diss_hat_chunk_val = self.Epsilon_cnu_diss_hat_ufl_fenics_mesh_func()
             local_project(Epsilon_cnu_diss_hat_chunk_val, self.V_DG_scalar, self.Epsilon_cnu_diss_hat_val)
             self.Epsilon_cnu_diss_hat_val.rename("Average per segment nondimensional dissipated chain scission energy", "Epsilon_cnu_diss_hat")
-            self.file_results.write(self.Epsilon_cnu_diss_hat_val, self.t_val)
+            # self.file_results.write(self.Epsilon_cnu_diss_hat_val, self.t_val)
+            self.file_results.write(self.Epsilon_cnu_diss_hat_val, self.t_val, encoding=XDMFFile.Encoding.ASCII)
         
         if ppp["save_Epsilon_cnu_diss_hat_chunks"]:
             Epsilon_cnu_diss_hat_chunk_val = self.Epsilon_cnu_diss_hat_ufl_fenics_mesh_func()
@@ -1814,7 +1853,8 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
                 prmtr_str = "epsilon_c_diss_hat nu = " + nu_str
 
                 self.epsilon_c_diss_hat_val.rename(name_str, prmtr_str)
-                self.file_results.write(self.epsilon_c_diss_hat_val, self.t_val)
+                # self.file_results.write(self.epsilon_c_diss_hat_val, self.t_val)
+                self.file_results.write(self.epsilon_c_diss_hat_val, self.t_val, encoding=XDMFFile.Encoding.ASCII)
         
         if ppp["save_epsilon_c_diss_hat_chunks"]:
             for meshpoint_indx in range(self.meshpoint_num):
@@ -1830,7 +1870,8 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
             Epsilon_c_diss_hat_chunk_val = self.Epsilon_c_diss_hat_ufl_fenics_mesh_func()
             local_project(Epsilon_c_diss_hat_chunk_val, self.V_DG_scalar, self.Epsilon_c_diss_hat_val)
             self.Epsilon_c_diss_hat_val.rename("Average nondimensional dissipated chain scission energy", "Epsilon_c_diss_hat")
-            self.file_results.write(self.Epsilon_c_diss_hat_val, self.t_val)
+            # self.file_results.write(self.Epsilon_c_diss_hat_val, self.t_val)
+            self.file_results.write(self.Epsilon_c_diss_hat_val, self.t_val, encoding=XDMFFile.Encoding.ASCII)
         
         if ppp["save_Epsilon_c_diss_hat_chunks"]:
             Epsilon_c_diss_hat_chunk_val = self.Epsilon_c_diss_hat_ufl_fenics_mesh_func()
@@ -1851,7 +1892,8 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
                 prmtr_str = "overline_epsilon_cnu_diss_hat nu = " + nu_str
 
                 self.overline_epsilon_cnu_diss_hat_val.rename(name_str, prmtr_str)
-                self.file_results.write(self.overline_epsilon_cnu_diss_hat_val, self.t_val)
+                # self.file_results.write(self.overline_epsilon_cnu_diss_hat_val, self.t_val)
+                self.file_results.write(self.overline_epsilon_cnu_diss_hat_val, self.t_val, encoding=XDMFFile.Encoding.ASCII)
         
         if ppp["save_overline_epsilon_cnu_diss_hat_chunks"]:
             for meshpoint_indx in range(self.meshpoint_num):
@@ -1867,7 +1909,8 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
             overline_Epsilon_cnu_diss_hat_chunk_val = self.overline_Epsilon_cnu_diss_hat_ufl_fenics_mesh_func()
             local_project(overline_Epsilon_cnu_diss_hat_chunk_val, self.V_DG_scalar, self.overline_Epsilon_cnu_diss_hat_val)
             self.overline_Epsilon_cnu_diss_hat_val.rename("Average per segment nondimensional scaled dissipated chain scission energy", "overline_Epsilon_cnu_diss_hat")
-            self.file_results.write(self.overline_Epsilon_cnu_diss_hat_val, self.t_val)
+            # self.file_results.write(self.overline_Epsilon_cnu_diss_hat_val, self.t_val)
+            self.file_results.write(self.overline_Epsilon_cnu_diss_hat_val, self.t_val, encoding=XDMFFile.Encoding.ASCII)
         
         if ppp["save_overline_Epsilon_cnu_diss_hat_chunks"]:
             overline_Epsilon_cnu_diss_hat_chunk_val = self.overline_Epsilon_cnu_diss_hat_ufl_fenics_mesh_func()
@@ -1888,7 +1931,8 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
                 prmtr_str = "overline_epsilon_c_diss_hat nu = " + nu_str
 
                 self.overline_epsilon_c_diss_hat_val.rename(name_str, prmtr_str)
-                self.file_results.write(self.overline_epsilon_c_diss_hat_val, self.t_val)
+                # self.file_results.write(self.overline_epsilon_c_diss_hat_val, self.t_val)
+                self.file_results.write(self.overline_epsilon_c_diss_hat_val, self.t_val, encoding=XDMFFile.Encoding.ASCII)
         
         if ppp["save_overline_epsilon_c_diss_hat_chunks"]:
             for meshpoint_indx in range(self.meshpoint_num):
@@ -1904,7 +1948,8 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
             overline_Epsilon_c_diss_hat_chunk_val = self.overline_Epsilon_c_diss_hat_ufl_fenics_mesh_func()
             local_project(overline_Epsilon_c_diss_hat_chunk_val, self.V_DG_scalar, self.overline_Epsilon_c_diss_hat_val)
             self.overline_Epsilon_c_diss_hat_val.rename("Average nondimensional scaled dissipated chain scission energy", "overline_Epsilon_c_diss_hat")
-            self.file_results.write(self.overline_Epsilon_c_diss_hat_val, self.t_val)
+            # self.file_results.write(self.overline_Epsilon_c_diss_hat_val, self.t_val)
+            self.file_results.write(self.overline_Epsilon_c_diss_hat_val, self.t_val, encoding=XDMFFile.Encoding.ASCII)
         
         if ppp["save_overline_Epsilon_c_diss_hat_chunks"]:
             overline_Epsilon_c_diss_hat_chunk_val = self.overline_Epsilon_c_diss_hat_ufl_fenics_mesh_func()
@@ -1916,7 +1961,8 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
         
         if ppp["save_u_mesh"]:
             self.u.rename("Displacement", "u")
-            self.file_results.write(self.u, self.t_val)
+            # self.file_results.write(self.u, self.t_val)
+            self.file_results.write(self.u, self.t_val, encoding=XDMFFile.Encoding.ASCII)
         
         if ppp["save_u_chunks"]:
             # self.u_chunks_post_processing()
@@ -1929,7 +1975,8 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
         if ppp["save_F_mesh"]:
             local_project(self.F, self.V_DG_tensor, self.F_val)
             self.F_val.rename("Deformation gradient", "F")
-            self.file_results.write(self.F_val, self.t_val)
+            # self.file_results.write(self.F_val, self.t_val)
+            self.file_results.write(self.F_val, self.t_val, encoding=XDMFFile.Encoding.ASCII)
         
         if ppp["save_F_chunks"]:
             # self.F_chunks_post_processing()
@@ -1941,20 +1988,24 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
 
         if ppp["save_sigma_mesh"]:
             sigma_chunk_val = self.cauchy_stress_ufl_fenics_mesh_func()
-            sigma_penalty_term_chunk_val = self.cauchy_stress_penalty_term_ufl_fenics_mesh_func()
-            sigma_less_penalty_term_chunk_val = sigma_chunk_val - sigma_penalty_term_chunk_val
+            # sigma_penalty_term_chunk_val = self.cauchy_stress_penalty_term_ufl_fenics_mesh_func()
+            # sigma_less_penalty_term_chunk_val = sigma_chunk_val - sigma_penalty_term_chunk_val
 
             local_project(sigma_chunk_val, self.V_DG_tensor, self.sigma_val)
-            local_project(sigma_penalty_term_chunk_val, self.V_DG_tensor, self.sigma_penalty_term_val)
-            local_project(sigma_less_penalty_term_chunk_val, self.V_DG_tensor, self.sigma_less_penalty_term_val)
+            # local_project(sigma_penalty_term_chunk_val, self.V_DG_tensor, self.sigma_penalty_term_val)
+            # local_project(sigma_less_penalty_term_chunk_val, self.V_DG_tensor, self.sigma_less_penalty_term_val)
 
             self.sigma_val.rename("Normalized Cauchy stress", "sigma")
-            self.sigma_penalty_term_val.rename("Normalized Cauchy stress penalty term", "sigma penalty term")
-            self.sigma_less_penalty_term_val.rename("Normalized Cauchy stress less penalty term", "sigma less penalty term")
+            # self.sigma_penalty_term_val.rename("Normalized Cauchy stress penalty term", "sigma penalty term")
+            # self.sigma_less_penalty_term_val.rename("Normalized Cauchy stress less penalty term", "sigma less penalty term")
 
-            self.file_results.write(self.sigma_val, self.t_val)
-            self.file_results.write(self.sigma_penalty_term_val, self.t_val)
-            self.file_results.write(self.sigma_less_penalty_term_val, self.t_val)
+            # self.file_results.write(self.sigma_val, self.t_val)
+            # self.file_results.write(self.sigma_penalty_term_val, self.t_val)
+            # self.file_results.write(self.sigma_less_penalty_term_val, self.t_val)
+            
+            self.file_results.write(self.sigma_val, self.t_val, encoding=XDMFFile.Encoding.ASCII)
+            # self.file_results.write(self.sigma_penalty_term_val, self.t_val, encoding=XDMFFile.Encoding.ASCII)
+            # self.file_results.write(self.sigma_less_penalty_term_val, self.t_val, encoding=XDMFFile.Encoding.ASCII)
         
         if ppp["save_sigma_chunks"]:
             # self.sigma_chunks_post_processing()
@@ -2349,17 +2400,17 @@ class TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightChainModelEqual
         """
         Gradient activity
         """
-        # dp = self.parameters["deformation"]
-        g_k_cond_val = 0.01
+        dp = self.parameters["deformation"]
+        mp = self.parameters["material"]
 
         # return exp(-self.t_val/dp["t_max"])
 
         D_c_val = self.D_c_ufl_fenics_mesh_func()
         D_c_val = conditional(gt(D_c_val, 1.0), 1.0, D_c_val)
-        # n = Constant(1)
-        # g_val = ((1.-g_k_cond_val)*exp(-n*D_c_val)+g_k_cond_val-exp(-n)) / (1.-exp(-n))
+        n = Constant(mp["n"])
+        # g_val = ((1.-dp["k_g_cond_val"])*exp(-n*D_c_val)+dp["k_g_cond_val"]-exp(-n)) / (1.-exp(-n))
         # g_val = conditional(lt(g_val, 0.0), 0.0, g_val)
-        g_val = 0.5 * (cos(DOLFIN_PI*D_c_val)+1.) * (1.-g_k_cond_val) + g_k_cond_val
+        g_val = 0.5 * (cos(DOLFIN_PI*D_c_val**(1/n))+1.) * (1.-dp["k_g_cond_val"]) + dp["k_g_cond_val"]
         g_val = conditional(lt(g_val, 0.0), 0.0, g_val)
         return g_val
     

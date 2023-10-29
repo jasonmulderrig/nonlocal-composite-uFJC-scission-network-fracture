@@ -126,6 +126,9 @@ class NotchedCrack(TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightCh
         # Non-local interaction length scale
         ump.add("l_nl", self.l_nl)
 
+        # Interaction intensity
+        ump.add("n", 1)
+
         # Define the chain segment number statistics in the network
         ump.add("nu_distribution", "uniform")
 
@@ -191,18 +194,21 @@ class NotchedCrack(TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightCh
         femp["solver_algorithm"] = "monolithic" # "alternate_minimization" # "monolithic"
         femp["solver_bounded"] = False # True
 
+        femp["u_degree"] = 2
+
         # Deformation parameters
         dp = self.parameters["deformation"]
 
         dp["deformation_type"] = "uniaxial"
 
         dp["K__G"] = 10
-        dp["k_cond_val"] = 1.e-4 # 1.e-4
+        dp["k_cond_val"] = 1.e-2 # 1.e-4
+        dp["k_g_cond_val"] = 1.e-2
         dp["tol_lmbda_c_tilde_val"] = 1e-3
 
         dp["strain_rate"] = 0.1 # 0.2 # 1/sec
-        dp["t_max"] = 3.36 # 5.28 # 6.44 # 8.32 # 6.2 # 5.8 # 4.4 # 30.0 # 33.0 # 30.0 # 13.6 # 13.5 # 16.0 # 100.0 # sec
-        dp["t_step"] = 0.02 # 0.005 # 0.01 # 0.02 # sec
+        dp["t_max"] = 8.80 # 6.44 # 8.32 # 6.2 # 5.8 # 4.4 # 30.0 # 33.0 # 30.0 # 13.6 # 13.5 # 16.0 # 100.0 # sec
+        dp["t_step"] = 0.005 # 0.005 # 0.01 # 0.02 # sec
         dp["t_step_chunk_num"] = 2
 
         # Post-processing parameters
@@ -309,12 +315,16 @@ class NotchedCrack(TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightCh
         ppp["save_sigma_chunks"] = False
 
         ppp["save_u_mesh"] = True
-        ppp["save_lmbda_c_tilde_max_mesh"] = True
-        ppp["save_lmbda_c_tilde_max_chunks"] = True
-        ppp["save_g_mesh"] = True
-        ppp["save_g_chunks"] = True
-        ppp["save_D_c_mesh"] = True
-        ppp["save_D_c_chunks"] = True
+        # ppp["save_lmbda_c_mesh"] = True
+        ppp["save_lmbda_c_mesh"] = False
+        # ppp["save_lmbda_c_tilde_max_mesh"] = True
+        ppp["save_lmbda_c_tilde_max_mesh"] = False
+        # ppp["save_g_mesh"] = True
+        ppp["save_g_chunks"] = False
+        # ppp["save_D_c_mesh"] = True
+        ppp["save_D_c_mesh"] = False
+        # ppp["save_sigma_mesh"] = True
+        ppp["save_sigma_mesh"] = False
 
     def set_user_parameters_in_lists(self):
         """
@@ -528,11 +538,11 @@ class NotchedCrack(TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightCh
         
         geofile = textwrap.dedent(geofile)
 
-        L_string           = "{:.1f}".format(self.L)
-        H_string           = "{:.1f}".format(self.H)
-        x_notch_point_string = "{:.1f}".format(self.x_notch_point)
-        r_notch_string     = "{:.1f}".format(self.r_notch)
-        coarse_mesh_elem_size_string  = "{:.1f}".format(self.coarse_mesh_elem_size)
+        L_string           = "{:.2f}".format(self.L)
+        H_string           = "{:.2f}".format(self.H)
+        x_notch_point_string = "{:.3f}".format(self.x_notch_point)
+        r_notch_string     = "{:.2f}".format(self.r_notch)
+        coarse_mesh_elem_size_string  = "{:.2f}".format(self.coarse_mesh_elem_size)
 
         mp = self.parameters["material"]
         gp = self.parameters["two_dimensional_geometry"]
@@ -1355,13 +1365,13 @@ class NotchedCrack(TwoDimensionalPlaneStrainNearlyIncompressibleNonaffineEightCh
 
 if __name__ == '__main__':
 
-    L, H = 1.0, 1.5
-    x_notch_point = 0.5
+    x_notch_point = 0.075 # 0.1 # 0.5, 1 # 0.5
+    L, H = 10*x_notch_point, 40*x_notch_point # 1.0, 1.5 
     r_notch = 0.02
     notch_fine_mesh_layer_level_num = 1
     fine_mesh_elem_size = 0.01 # 0.002
     coarse_mesh_elem_size = 0.01 # 0.25 # 0.1
-    l_nl = coarse_mesh_elem_size # coarse_mesh_elem_size # 10*r_notch # 1.25*r_notch # 0.02 = 2*coarse_mesh_elem_size
+    l_nl = 4*coarse_mesh_elem_size # 32*coarse_mesh_elem_size # 10*r_notch # 1.25*r_notch # 0.02 = 2*coarse_mesh_elem_size
     problem = NotchedCrack(L, H, x_notch_point, r_notch, notch_fine_mesh_layer_level_num, fine_mesh_elem_size, coarse_mesh_elem_size, l_nl)
     problem.solve()
     problem.finalization()

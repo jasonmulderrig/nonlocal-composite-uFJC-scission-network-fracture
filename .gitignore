@@ -1,4 +1,7 @@
-# Edited by jasonmulderrig on 2020-11-10
+# Edited by jasonmulderrig on 2023-10-29
+
+# CSV data files
+*.csv
 
 ### FEniCS component of .gitignore
 dijitso/

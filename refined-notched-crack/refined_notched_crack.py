@@ -118,13 +118,10 @@ class RefinedNotchedCrack(TwoDimensionalPlaneStrainNearlyIncompressibleNonaffine
 
         # Network-level damage
         d_c_lmbda_nu_crit_min = 1.001 # 1.001
-        d_c_lmbda_nu_crit_max = 1.2 # 1.005 # 1.005
+        d_c_lmbda_nu_crit_max = 1.005 # 1.005
 
         ump.add("d_c_lmbda_nu_crit_min", d_c_lmbda_nu_crit_min)
         ump.add("d_c_lmbda_nu_crit_max", d_c_lmbda_nu_crit_max)
-
-        # Non-local coupling modulus
-        ump.add("h_nl", 1e-9)
 
         # Non-local interaction length scale
         ump.add("l_nl", self.l_nl)
@@ -171,9 +168,6 @@ class RefinedNotchedCrack(TwoDimensionalPlaneStrainNearlyIncompressibleNonaffine
         lmbda_c_crit_max = composite_ufjc_nu_max.lmbda_c_eq_crit / composite_ufjc_nu_max.A_nu
         ump.add("lmbda_c_tilde_lb", 0.0)
         ump.add("lmbda_c_tilde_ub", lmbda_c_crit_max)
-
-        lmbda_nu_crit_max = composite_ufjc_nu_max.lmbda_nu_crit
-        ump.add("d_c_lmbda_nu_crit_max", lmbda_nu_crit_max)
         
         # Define various characteristics of the deformation for the network
         ump.add("network_model", "statistical_mechanics_model")
@@ -191,17 +185,26 @@ class RefinedNotchedCrack(TwoDimensionalPlaneStrainNearlyIncompressibleNonaffine
 
         mp.assign(ump)
 
+        # Finite element method parameters
+        femp = self.parameters["fem"]
+
+        femp["solver_algorithm"] = "monolithic" # "alternate_minimization" # "monolithic"
+        femp["solver_bounded"] = False # True
+
+        femp["u_degree"] = 2
+
         # Deformation parameters
         dp = self.parameters["deformation"]
 
         dp["deformation_type"] = "uniaxial"
 
         dp["K__G"] = 10
-        dp["k_cond_val"] = 1.e-3 # 1.e-4
+        dp["k_cond_val"] = 1.e-2 # 1.e-4
+        dp["k_g_cond_val"] = 1.e-3
         dp["tol_lmbda_c_tilde_val"] = 1e-3
 
         dp["strain_rate"] = 0.1 # 0.2 # 1/sec
-        dp["t_max"] = 40.0 # 6.2 # 5.8 # 4.4 # 30.0 # 33.0 # 30.0 # 13.6 # 13.5 # 16.0 # 100.0 # sec
+        dp["t_max"] = 5.00 # 5.28 # 6.2 # 5.8 # 4.4 # 30.0 # 33.0 # 30.0 # 13.6 # 13.5 # 16.0 # 100.0 # sec
         dp["t_step"] = 0.02 # 0.005 # 0.01 # 0.02 # sec
         dp["t_step_chunk_num"] = 2
 
@@ -298,10 +301,12 @@ class RefinedNotchedCrack(TwoDimensionalPlaneStrainNearlyIncompressibleNonaffine
         ppp["save_sigma_chunks"] = False
 
         ppp["save_u_mesh"] = True
+        ppp["save_lmbda_c_tilde_max_mesh"] = True
+        # ppp["save_lmbda_c_tilde_max_chunks"] = True
         ppp["save_g_mesh"] = True
-        ppp["save_g_chunks"] = True
+        # ppp["save_g_chunks"] = False
         ppp["save_D_c_mesh"] = True
-        ppp["save_D_c_chunks"] = True
+        # ppp["save_D_c_chunks"] = True
 
     def set_user_parameters_in_lists(self):
         """
@@ -411,15 +416,66 @@ class RefinedNotchedCrack(TwoDimensionalPlaneStrainNearlyIncompressibleNonaffine
                                                          }
 
         # solver_bounded_lmbda_c_tilde
-        self.solver_bounded_lmbda_c_tilde_parameters_dict = {"maximum_iterations": 100,
-                                                             "report": False,
-                                                             "line_search": "more-thuente",
-                                                             "linear_solver": "cg",
-                                                             "preconditioner" : "hypre_amg",
-                                                             "method": "tron",
-                                                             "gradient_absolute_tol": 1e-8,
-                                                             "gradient_relative_tol": 1e-8,
-                                                             "error_on_nonconvergence": True}
+        self.solver_bounded_lmbda_c_tilde_parameters_dict = {"nonlinear_solver": "snes",
+                                                             "symmetric": True,
+                                                             "snes_solver": {"linear_solver": "umfpack",
+                                                                             "method": "vinewtonssls",
+                                                                             "line_search": "basic",
+                                                                             "maximum_iterations": 200,# 50
+                                                                             "absolute_tolerance": 1e-8,
+                                                                             "relative_tolerance": 1e-7,# 1e-5
+                                                                             "solution_tolerance": 1e-7,# 1e-5
+                                                                             "report": True,
+                                                                             "error_on_nonconvergence": False
+                                                                             }
+                                                                             }
+        
+        # solver_unbounded_lmbda_c_tilde
+        self.solver_unbounded_lmbda_c_tilde_parameters_dict = {"nonlinear_solver": "snes",
+                                                               "symmetric": True,
+                                                               "snes_solver": {"linear_solver": "mumps",
+                                                                               "method": "newtontr",
+                                                                               "line_search": "cp",
+                                                                               "preconditioner": "hypre_amg",
+                                                                               "maximum_iterations": 200,
+                                                                               "absolute_tolerance": 1e-8,
+                                                                               "relative_tolerance": 1e-7,
+                                                                               "solution_tolerance": 1e-7,
+                                                                               "report": True,
+                                                                               "error_on_nonconvergence": False
+                                                                               }
+                                                                               }
+        
+        # solver_bounded_monolithic
+        self.solver_bounded_monolithic_parameters_dict = {"nonlinear_solver": "snes",
+                                                          "symmetric": True,
+                                                          "snes_solver": {"linear_solver": "umfpack",
+                                                                          "method": "vinewtonssls",
+                                                                          "line_search": "basic",
+                                                                          "maximum_iterations": 200,#50
+                                                                          "absolute_tolerance": 1e-8,
+                                                                          "relative_tolerance": 1e-7,# 1e-5
+                                                                          "solution_tolerance": 1e-7,# 1e-5
+                                                                          "report": True,
+                                                                          "error_on_nonconvergence": False
+                                                                          }
+                                                                          }
+
+        # solver_unbounded_monolithic
+        self.solver_unbounded_monolithic_parameters_dict = {"nonlinear_solver": "snes",
+                                                            "symmetric": True,
+                                                            "snes_solver": {"linear_solver": "mumps",#"mumps",
+                                                                            "method": "newtontr",
+                                                                            "line_search": "cp",
+                                                                            "preconditioner": "hypre_amg",
+                                                                            "maximum_iterations": 200,
+                                                                            "absolute_tolerance": 1e-8,
+                                                                            "relative_tolerance": 1e-4, # 1e-4 seems to work
+                                                                            "solution_tolerance": 1e-4, # 1e-4 seems to work
+                                                                            "report": True,
+                                                                            "error_on_nonconvergence": False
+                                                                            }
+                                                                            }
         
     def prefix(self):
         gp = self.parameters["two_dimensional_geometry"]
@@ -554,6 +610,56 @@ class RefinedNotchedCrack(TwoDimensionalPlaneStrainNearlyIncompressibleNonaffine
 
         return [bc_I, bc_II, bc_III]
     
+    def define_bc_monolithic(self):
+        """
+        Return a list of boundary conditions for the monolithic solution
+        scheme
+        """
+        self.lines = MeshFunction("size_t", self.mesh, self.mesh.topology().dim()-1)
+        self.lines.set_all(0)
+
+        L = self.L
+        H = self.H
+        x_notch_point = self.x_notch_point
+        r_notch = self.r_notch
+
+        class LeftBoundary(SubDomain):
+            def inside(self, x, on_boundary):
+                return near(x[0], 0., DOLFIN_EPS)
+        
+        class RightBoundary(SubDomain):
+            def inside(self, x, on_boundary):
+                return near(x[0], L, DOLFIN_EPS)
+
+        class BottomBoundary(SubDomain):
+            def inside(self, x, on_boundary):
+                return near(x[1], -H/2., DOLFIN_EPS)
+        
+        class TopBoundary(SubDomain):
+            def inside(self, x, on_boundary):
+                return near(x[1], H/2., DOLFIN_EPS)
+
+        class Notch(SubDomain):
+            def inside(self, x, on_boundary):
+                r_notch_sq = (x[0]-(x_notch_point-r_notch))**2 + x[1]**2
+                return r_notch_sq <= (r_notch + DOLFIN_EPS)**2
+
+        LeftBoundary().mark(self.lines, 1)
+        RightBoundary().mark(self.lines, 2)
+        BottomBoundary().mark(self.lines, 3)
+        TopBoundary().mark(self.lines, 4)
+        Notch().mark(self.lines, 5)
+
+        mesh_topologier(self.lines, self.prefix(), "lines")
+
+        self.u_y_expression = Expression("u_y", u_y=0., degree=0)
+
+        bc_I = DirichletBC(self.V.sub(0).sub(1), Constant(0.), BottomBoundary())
+        bc_II = DirichletBC(self.V.sub(0).sub(0), Constant(0.), RightBoundary())
+        bc_III  = DirichletBC(self.V.sub(0).sub(1), self.u_y_expression, TopBoundary())
+
+        return [bc_I, bc_II, bc_III]
+    
     def F_func(self, t):
         """
         Function defining the deformation
@@ -650,12 +756,12 @@ class RefinedNotchedCrack(TwoDimensionalPlaneStrainNearlyIncompressibleNonaffine
         self.F_22_chunks_val = [0. for meshpoint_indx in range(self.meshpoint_num)]
     
     def set_sigma_chunks(self):
-        self.sigma_mm_22_chunks     = []
-        self.sigma_mm_22_chunks_val = [0. for meshpoint_indx in range(self.meshpoint_num)]
-        self.sigma_nl_22_chunks     = []
-        self.sigma_nl_22_chunks_val = [0. for meshpoint_indx in range(self.meshpoint_num)]
-        self.sigma_nc_22_chunks     = []
-        self.sigma_nc_22_chunks_val = [0. for meshpoint_indx in range(self.meshpoint_num)]
+        self.sigma_22_chunks     = []
+        self.sigma_22_chunks_val = [0. for meshpoint_indx in range(self.meshpoint_num)]
+        self.sigma_22_penalty_term_chunks     = []
+        self.sigma_22_penalty_term_chunks_val = [0. for meshpoint_indx in range(self.meshpoint_num)]
+        self.sigma_22_less_penalty_term_chunks     = []
+        self.sigma_22_less_penalty_term_chunks_val = [0. for meshpoint_indx in range(self.meshpoint_num)]
     
     def set_loading(self):
         """
@@ -681,23 +787,23 @@ class RefinedNotchedCrack(TwoDimensionalPlaneStrainNearlyIncompressibleNonaffine
         self.F_22_chunks.append(deepcopy(self.F_22_chunks_val))
     
     def sigma_chunks_post_processing(self):
-        sigma_mm_val = self.cauchy_stress_mm_ufl_fenics_mesh_func()
-        sigma_nl_val = self.cauchy_stress_nl_ufl_fenics_mesh_func()
-        sigma_nc_val = self.cauchy_stress_nc_ufl_fenics_mesh_func()
-        sigma_mm_val = project(sigma_mm_val, self.V_DG_tensor)
-        sigma_nl_val = project(sigma_nl_val, self.V_DG_tensor)
-        sigma_nc_val = project(sigma_nc_val, self.V_DG_tensor)
+        sigma_val = self.cauchy_stress_ufl_fenics_mesh_func()
+        sigma_penalty_term_val = self.cauchy_stress_penalty_term_ufl_fenics_mesh_func()
+        sigma_less_penalty_term_val = sigma_val - sigma_penalty_term_val
+        sigma_val = project(sigma_val, self.V_DG_tensor)
+        sigma_penalty_term_val = project(sigma_penalty_term_val, self.V_DG_tensor)
+        sigma_less_penalty_term_val = project(sigma_less_penalty_term_val, self.V_DG_tensor)
         for meshpoint_indx in range(self.meshpoint_num):
             MPI.barrier(MPI.comm_world)
-            sigma_mm_chunks_val = peval(sigma_mm_val, self.meshpoints_list[meshpoint_indx])
-            sigma_nl_chunks_val = peval(sigma_nl_val, self.meshpoints_list[meshpoint_indx])
-            sigma_nc_chunks_val = peval(sigma_nc_val, self.meshpoints_list[meshpoint_indx])
-            self.sigma_mm_22_chunks_val[meshpoint_indx] = sigma_mm_chunks_val[self.two_dim_tensor2voigt_vector_indx_dict["22"]]
-            self.sigma_nl_22_chunks_val[meshpoint_indx] = sigma_nl_chunks_val[self.two_dim_tensor2voigt_vector_indx_dict["22"]]
-            self.sigma_nc_22_chunks_val[meshpoint_indx] = sigma_nc_chunks_val[self.two_dim_tensor2voigt_vector_indx_dict["22"]]
-        self.sigma_mm_22_chunks.append(deepcopy(self.sigma_mm_22_chunks_val))
-        self.sigma_nl_22_chunks.append(deepcopy(self.sigma_nl_22_chunks_val))
-        self.sigma_nc_22_chunks.append(deepcopy(self.sigma_nc_22_chunks_val))
+            sigma_chunks_val = peval(sigma_val, self.meshpoints_list[meshpoint_indx])
+            sigma_penalty_term_chunks_val = peval(sigma_penalty_term_val, self.meshpoints_list[meshpoint_indx])
+            sigma_less_penalty_term_chunks_val = peval(sigma_less_penalty_term_val, self.meshpoints_list[meshpoint_indx])
+            self.sigma_22_chunks_val[meshpoint_indx] = sigma_chunks_val[self.two_dim_tensor2voigt_vector_indx_dict["22"]]
+            self.sigma_22_penalty_term_chunks_val[meshpoint_indx] = sigma_penalty_term_chunks_val[self.two_dim_tensor2voigt_vector_indx_dict["22"]]
+            self.sigma_22_less_penalty_term_chunks_val[meshpoint_indx] = sigma_less_penalty_term_chunks_val[self.two_dim_tensor2voigt_vector_indx_dict["22"]]
+        self.sigma_22_chunks.append(deepcopy(self.sigma_22_chunks_val))
+        self.sigma_22_penalty_term_chunks.append(deepcopy(self.sigma_22_penalty_term_chunks_val))
+        self.sigma_22_less_penalty_term_chunks.append(deepcopy(self.sigma_22_less_penalty_term_chunks_val))
 
     def finalization(self):
         """
