@@ -171,6 +171,6 @@ mkdir mshr/build   && cd mshr/build   && cmake .. && sudo make install && cd ../
 cd dolfin/python && pip3 install . && cd ../..
 cd mshr/python   && pip3 install . && cd ../..
 
-pip3 install composite-ufjc-scission-ufl-fenics==1.3.8
+pip3 install composite-ufjc-scission-ufl-fenics==1.4.0
 
 deactivate
